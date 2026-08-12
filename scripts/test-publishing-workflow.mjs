@@ -14,6 +14,7 @@ import {
   generatePreviewRecords
 } from "./generate-projects-preview.mjs";
 import {
+  DO_NOT_PUBLISH_STATUS,
   MAX_IMAGE_BYTES,
   MAIN_BRANCH,
   PRODUCTION_REPOSITORY,
@@ -24,6 +25,7 @@ import {
   buildSmartsheetWriteBackPayload,
   countReadyToPublishRows,
   detectNoChange,
+  detectPublicationWork,
   generatedImageFilename,
   updateSmartsheetRows,
   validateGeneratedWebsiteRecords
@@ -112,6 +114,10 @@ function sheet(rows) {
   };
 }
 
+function rowValue(row, title) {
+  return row.cells.find(item => item.columnId === columnIdByTitle.get(title))?.value;
+}
+
 async function tempImages(filenames = []) {
   const directory = await mkdtemp(join(tmpdir(), "seqi-test-images-"));
   await mkdir(directory, { recursive: true });
@@ -172,6 +178,69 @@ async function expectPublishValidation(testName, fn, expectedText) {
 const tests = [];
 function test(name, fn) {
   tests.push({ name, fn });
+}
+
+async function buildUnpublishScenario() {
+  const imagesDirectory = await tempImages(["published-a.jpg", "published-b.jpg"]);
+  const originalSheet = sheet([
+    projectRow({
+      recordId: "SEQI-0050",
+      rowId: 50,
+      status: PUBLISHED_STATUS,
+      photoFilename: "published-a.jpg",
+      publicationDate: "2026-06-10",
+      title: "Published A"
+    }),
+    projectRow({
+      recordId: "SEQI-0051",
+      rowId: 51,
+      status: PUBLISHED_STATUS,
+      photoFilename: "published-b.jpg",
+      publicationDate: "2026-06-11",
+      title: "Published B"
+    })
+  ]);
+  const originalPlan = await buildPublishPlan({
+    sheet: originalSheet,
+    imagesDirectory,
+    tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
+    attachmentClient: forbiddenAttachmentClient()
+  });
+  const unpublishedRow = projectRow({
+    recordId: "SEQI-0050",
+    rowId: 50,
+    status: DO_NOT_PUBLISH_STATUS,
+    photoFilename: "published-a.jpg",
+    publicationDate: "2026-06-10",
+    title: "Published A"
+  });
+  const sourceRowSnapshot = structuredClone(unpublishedRow);
+  const updatedSheet = sheet([
+    unpublishedRow,
+    projectRow({
+      recordId: "SEQI-0051",
+      rowId: 51,
+      status: PUBLISHED_STATUS,
+      photoFilename: "published-b.jpg",
+      publicationDate: "2026-06-11",
+      title: "Published B"
+    })
+  ]);
+  const unpublishPlan = await buildPublishPlan({
+    sheet: updatedSheet,
+    currentRecords: originalPlan.records,
+    imagesDirectory,
+    tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
+    attachmentClient: forbiddenAttachmentClient()
+  });
+
+  return {
+    imagesDirectory,
+    originalPlan,
+    unpublishedRow,
+    sourceRowSnapshot,
+    unpublishPlan
+  };
 }
 
 test("Phase 2B mapping validates ID, type, title, description, stage, organization, and photo", async () => {
@@ -380,6 +449,163 @@ test("Phase 3 includes Ready and Published, excludes other statuses", async () =
     attachmentClient: forbiddenAttachmentClient()
   });
   assert.deepEqual(plan.records.map(record => record.id), ["SEQI-0001", "SEQI-0002"]);
+});
+
+test("Published to Do not publish removes exactly one record and preserves other Published records", async () => {
+  const { originalPlan, unpublishPlan } = await buildUnpublishScenario();
+  assert.equal(originalPlan.records.length, 2);
+  assert.deepEqual(unpublishPlan.records.map(record => record.id), ["SEQI-0051"]);
+  assert.equal(unpublishPlan.summary.publishedCount, 1);
+  assert.equal(unpublishPlan.summary.doNotPublishCount, 1);
+  assert.deepEqual(detectPublicationWork(originalPlan.serialized, unpublishPlan), {
+    shouldPublish: true,
+    galleryChanged: true,
+    hasReadyRows: false
+  });
+});
+
+test("Unpublish generation creates no duplicate public records", async () => {
+  const { unpublishPlan } = await buildUnpublishScenario();
+  const ids = unpublishPlan.records.map(record => record.id);
+  assert.equal(new Set(ids).size, ids.length);
+});
+
+test("Unpublish preserves Smartsheet ID, date, photo filename, status, and repository image", async () => {
+  const {
+    imagesDirectory,
+    unpublishedRow,
+    sourceRowSnapshot,
+    unpublishPlan
+  } = await buildUnpublishScenario();
+
+  assert.deepEqual(unpublishedRow, sourceRowSnapshot);
+  assert.equal(rowValue(unpublishedRow, COMMON_COLUMN_TITLES.recordId), "SEQI-0050");
+  assert.equal(rowValue(unpublishedRow, COMMON_COLUMN_TITLES.publicationDate), "2026-06-10");
+  assert.equal(rowValue(unpublishedRow, COMMON_COLUMN_TITLES.photoFilename), "published-a.jpg");
+  assert.equal(rowValue(unpublishedRow, COMMON_COLUMN_TITLES.publicationStatus), DO_NOT_PUBLISH_STATUS);
+  assert.equal(unpublishPlan.writeBackRows.length, 0);
+  assert.equal(await readFile(join(imagesDirectory, "published-a.jpg"), "utf8"), "synthetic image");
+});
+
+test("Do not publish to Ready republishes the same record ID without duplication", async () => {
+  const { imagesDirectory, unpublishPlan } = await buildUnpublishScenario();
+  const republishPlan = await buildPublishPlan({
+    sheet: sheet([
+      projectRow({
+        recordId: "SEQI-0050",
+        rowId: 50,
+        status: READY_TO_PUBLISH_STATUS,
+        photoFilename: "published-a.jpg",
+        publicationDate: "2026-06-10",
+        title: "Published A"
+      }),
+      projectRow({
+        recordId: "SEQI-0051",
+        rowId: 51,
+        status: PUBLISHED_STATUS,
+        photoFilename: "published-b.jpg",
+        publicationDate: "2026-06-11",
+        title: "Published B"
+      })
+    ]),
+    currentRecords: unpublishPlan.records,
+    imagesDirectory,
+    tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
+    attachmentClient: forbiddenAttachmentClient()
+  });
+
+  assert.deepEqual(republishPlan.records.map(record => record.id), ["SEQI-0050", "SEQI-0051"]);
+  assert.equal(new Set(republishPlan.records.map(record => record.id)).size, 2);
+  assert.equal(republishPlan.records[0].photo, "images/published-a.jpg");
+  assert.equal(republishPlan.records[0].publishedOn, "10 June 2026");
+  assert.equal(republishPlan.writeBackRows[0].recordId, "SEQI-0050");
+  assert.equal(republishPlan.writeBackRows[0].recordIdWasBlank, false);
+});
+
+test("Unchanged Published records produce no publication work", async () => {
+  const imagesDirectory = await tempImages(["unchanged.jpg"]);
+  const sourceSheet = sheet([
+    projectRow({
+      recordId: "SEQI-0052",
+      rowId: 52,
+      status: PUBLISHED_STATUS,
+      photoFilename: "unchanged.jpg",
+      publicationDate: "2026-06-12"
+    })
+  ]);
+  const initialPlan = await buildPublishPlan({
+    sheet: sourceSheet,
+    imagesDirectory,
+    tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
+    attachmentClient: forbiddenAttachmentClient()
+  });
+  const repeatedPlan = await buildPublishPlan({
+    sheet: sourceSheet,
+    currentRecords: initialPlan.records,
+    imagesDirectory,
+    tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
+    attachmentClient: forbiddenAttachmentClient()
+  });
+
+  assert.deepEqual(detectPublicationWork(initialPlan.serialized, repeatedPlan), {
+    shouldPublish: false,
+    galleryChanged: false,
+    hasReadyRows: false
+  });
+});
+
+test("A website-impacting Published field change triggers publication without Ready rows", async () => {
+  const imagesDirectory = await tempImages(["changed.jpg"]);
+  const originalSheet = sheet([
+    projectRow({
+      recordId: "SEQI-0053",
+      status: PUBLISHED_STATUS,
+      photoFilename: "changed.jpg",
+      title: "Original title"
+    })
+  ]);
+  const originalPlan = await buildPublishPlan({
+    sheet: originalSheet,
+    imagesDirectory,
+    tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
+    attachmentClient: forbiddenAttachmentClient()
+  });
+  const changedPlan = await buildPublishPlan({
+    sheet: sheet([
+      projectRow({
+        recordId: "SEQI-0053",
+        status: PUBLISHED_STATUS,
+        photoFilename: "changed.jpg",
+        title: "Updated title"
+      })
+    ]),
+    currentRecords: originalPlan.records,
+    imagesDirectory,
+    tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
+    attachmentClient: forbiddenAttachmentClient()
+  });
+
+  assert.equal(changedPlan.writeBackRows.length, 0);
+  assert.equal(detectPublicationWork(originalPlan.serialized, changedPlan).shouldPublish, true);
+});
+
+test("A failed unpublish deployment has no Smartsheet write-back payload", async () => {
+  const { unpublishedRow, sourceRowSnapshot, unpublishPlan } = await buildUnpublishScenario();
+  const originalFetch = globalThis.fetch;
+  let fetchCalled = false;
+  globalThis.fetch = async () => {
+    fetchCalled = true;
+    throw new Error("Smartsheet should not be called for an unpublish write-back");
+  };
+
+  try {
+    const result = await updateSmartsheetRows("sheet", "token", unpublishPlan.writeBackRows);
+    assert.equal(result.updatedCount, 0);
+    assert.equal(fetchCalled, false);
+    assert.deepEqual(unpublishedRow, sourceRowSnapshot);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 test("Phase 3 counts only Ready rows as new publication work", () => {
@@ -693,6 +919,11 @@ test("Phase 3 detects no-change publishing", async () => {
     attachmentClient: forbiddenAttachmentClient()
   });
   assert.equal(detectNoChange(plan.serialized, plan), true);
+  assert.deepEqual(detectPublicationWork(plan.serialized, plan), {
+    shouldPublish: true,
+    galleryChanged: false,
+    hasReadyRows: true
+  });
 });
 
 test("Phase 3 builds successful Smartsheet write-back payload", () => {

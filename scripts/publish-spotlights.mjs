@@ -27,6 +27,7 @@ export const MAIN_BRANCH = "main";
 export const PROJECTS_OUTPUT_PATH = "data/projects.json";
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 export const WEBSITE_RECORD_ID_PATTERN = /^SEQI-(\d{4,})$/;
+export const DO_NOT_PUBLISH_STATUS = "Do not publish";
 
 const SUPPORTED_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 const JPEG_EXTENSIONS = new Set([".jpg", ".jpeg"]);
@@ -599,6 +600,9 @@ export async function buildPublishPlan({
       getCellText(row, columnLookup.get(COMMON_COLUMN_TITLES.publicationStatus)) ===
       READY_TO_PUBLISH_STATUS
   );
+  const doNotPublishRows = rows.filter(
+    row => getPublicationStatus(row, columnLookup) === DO_NOT_PUBLISH_STATUS
+  );
   const errors = [];
 
   const seenRecordIds = new Set();
@@ -747,6 +751,7 @@ export async function buildPublishPlan({
       eligibleRecordCount: eligibleRows.length,
       readyToPublishCount: readyRows.length,
       publishedCount: eligibleRows.length - readyRows.length,
+      doNotPublishCount: doNotPublishRows.length,
       projectCount: generated.records.filter(record => record.type === "project").length,
       initiativeCount: generated.records.filter(record => record.type === "initiative").length,
       websiteRecordIds: generated.records.map(record => record.id),
@@ -799,6 +804,17 @@ export function buildSmartsheetWriteBackPayload(
 
 export function detectNoChange(currentSerialized, plan) {
   return currentSerialized === plan.serialized && plan.downloadedImages.length === 0;
+}
+
+export function detectPublicationWork(currentSerialized, plan) {
+  const galleryChanged = !detectNoChange(currentSerialized, plan);
+  const hasReadyRows = plan.summary.readyToPublishCount > 0;
+
+  return {
+    shouldPublish: hasReadyRows || galleryChanged,
+    galleryChanged,
+    hasReadyRows
+  };
 }
 
 async function applyPublishPlan(plan, metadataPath) {
@@ -870,6 +886,7 @@ function logSafeSummary(summary) {
   console.log(`Eligible record count: ${summary.eligibleRecordCount}`);
   console.log(`Ready-to-publish count: ${summary.readyToPublishCount}`);
   console.log(`Already-published count: ${summary.publishedCount}`);
+  console.log(`Do-not-publish count: ${summary.doNotPublishCount}`);
   console.log(`Project count: ${summary.projectCount}`);
   console.log(`Initiative count: ${summary.initiativeCount}`);
   console.log(`Website record IDs: ${summary.websiteRecordIds.join(", ") || "(none)"}`);
@@ -884,18 +901,44 @@ async function writeGitHubOutput(name, value) {
   await appendFile(outputPath, `${name}=${value}\n`, "utf8");
 }
 
+async function buildCurrentPublicationPlan(sheetId, accessToken) {
+  const tempDirectory = await mkdtemp(join(tmpdir(), "seqi-publish-images-"));
+  const sheet = await fetchSheet(sheetId, accessToken);
+  const currentSerialized = existsSync(PROJECTS_OUTPUT_PATH)
+    ? await readFile(PROJECTS_OUTPUT_PATH, "utf8")
+    : "[]\n";
+  const currentRecords = JSON.parse(currentSerialized);
+  const plan = await buildPublishPlan({
+    sheet,
+    currentRecords,
+    tempDirectory,
+    attachmentClient: makeDefaultAttachmentClient(sheetId, accessToken)
+  });
+
+  return {
+    currentSerialized,
+    plan
+  };
+}
+
+async function writePublicationDecisionOutputs(decision, readyCount) {
+  await writeGitHubOutput("should_publish", decision.shouldPublish ? "true" : "false");
+  await writeGitHubOutput("gallery_changed", decision.galleryChanged ? "true" : "false");
+  await writeGitHubOutput("ready_count", String(readyCount));
+}
+
 async function runCheck() {
   assertProductionPublishGuards();
 
   const accessToken = requireEnv("SMARTSHEET_ACCESS_TOKEN");
   const sheetId = requireEnv("SMARTSHEET_SHEET_ID");
-  const sheet = await fetchSheet(sheetId, accessToken);
-  const readyCount = countReadyToPublishRows(sheet);
+  const { currentSerialized, plan } = await buildCurrentPublicationPlan(sheetId, accessToken);
+  const decision = detectPublicationWork(currentSerialized, plan);
 
-  console.log(`Ready-to-publish count: ${readyCount}`);
-  console.log(readyCount > 0 ? "Publishing is required." : "No publishing work is required.");
-  await writeGitHubOutput("has_ready", readyCount > 0 ? "true" : "false");
-  await writeGitHubOutput("ready_count", String(readyCount));
+  logSafeSummary(plan.summary);
+  console.log(`Generated gallery changed: ${decision.galleryChanged ? "yes" : "no"}`);
+  console.log(decision.shouldPublish ? "Publishing is required." : "No publishing work is required.");
+  await writePublicationDecisionOutputs(decision, plan.summary.readyToPublishCount);
 }
 
 function logValidationErrors(errors) {
@@ -911,31 +954,19 @@ async function runPrepare() {
   const accessToken = requireEnv("SMARTSHEET_ACCESS_TOKEN");
   const sheetId = requireEnv("SMARTSHEET_SHEET_ID");
   const metadataPath = process.env.PUBLISH_METADATA_PATH || join(tmpdir(), "seqi-publish-metadata.json");
-  const tempDirectory = await mkdtemp(join(tmpdir(), "seqi-publish-images-"));
-  const sheet = await fetchSheet(sheetId, accessToken);
-  const readyCount = countReadyToPublishRows(sheet);
-  await writeGitHubOutput("has_ready", readyCount > 0 ? "true" : "false");
-  await writeGitHubOutput("ready_count", String(readyCount));
+  const { currentSerialized, plan } = await buildCurrentPublicationPlan(sheetId, accessToken);
+  const decision = detectPublicationWork(currentSerialized, plan);
+  await writePublicationDecisionOutputs(decision, plan.summary.readyToPublishCount);
 
-  if (readyCount === 0) {
-    console.log("No Ready to publish rows remain; skipping generation.");
+  if (!decision.shouldPublish) {
+    logSafeSummary(plan.summary);
+    console.log("Generated public gallery is unchanged; skipping publication.");
     return;
   }
 
-  const currentSerialized = existsSync(PROJECTS_OUTPUT_PATH)
-    ? await readFile(PROJECTS_OUTPUT_PATH, "utf8")
-    : "[]\n";
-  const currentRecords = JSON.parse(currentSerialized);
-  const plan = await buildPublishPlan({
-    sheet,
-    currentRecords,
-    tempDirectory,
-    attachmentClient: makeDefaultAttachmentClient(sheetId, accessToken)
-  });
-
   await applyPublishPlan(plan, metadataPath);
   logSafeSummary(plan.summary);
-  console.log(`JSON changed: ${detectNoChange(currentSerialized, plan) ? "no" : "yes"}`);
+  console.log(`Generated gallery changed: ${decision.galleryChanged ? "yes" : "no"}`);
   console.log(`Prepared Smartsheet write-back count: ${plan.writeBackRows.length}`);
 }
 

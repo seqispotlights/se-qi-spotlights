@@ -16,11 +16,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  check_ready:
-    name: Check Smartsheet for ready records
+  check_changes:
+    name: Check Smartsheet for website changes
     runs-on: ubuntu-latest
     outputs:
-      has_ready: ${{ steps.check.outputs.has_ready }}
+      should_publish: ${{ steps.check.outputs.should_publish }}
+      gallery_changed: ${{ steps.check.outputs.gallery_changed }}
       ready_count: ${{ steps.check.outputs.ready_count }}
 
     steps:
@@ -41,12 +42,12 @@ jobs:
 
   prepare:
     name: Generate and commit approved content
-    needs: check_ready
-    if: needs.check_ready.outputs.has_ready == 'true'
+    needs: check_changes
+    if: needs.check_changes.outputs.should_publish == 'true'
     runs-on: ubuntu-latest
     outputs:
       commit_sha: ${{ steps.revision.outputs.commit_sha }}
-      has_ready: ${{ steps.prepare.outputs.has_ready }}
+      should_publish: ${{ steps.prepare.outputs.should_publish }}
 
     steps:
       - name: Check out repository
@@ -73,14 +74,14 @@ jobs:
         run: node scripts/publish-spotlights.mjs prepare
 
       - name: Configure Git author
-        if: steps.prepare.outputs.has_ready == 'true'
+        if: steps.prepare.outputs.should_publish == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
       - name: Stage approved website files
         id: stage
-        if: steps.prepare.outputs.has_ready == 'true'
+        if: steps.prepare.outputs.should_publish == 'true'
         run: |
           git add data/projects.json images
           git diff --check
@@ -103,20 +104,20 @@ jobs:
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
       - name: Commit approved website files
-        if: steps.prepare.outputs.has_ready == 'true' && steps.stage.outputs.changed == 'true'
+        if: steps.prepare.outputs.should_publish == 'true' && steps.stage.outputs.changed == 'true'
         run: git commit -m "Publish approved SE-QI Spotlights"
 
       - name: Push to main
-        if: steps.prepare.outputs.has_ready == 'true' && steps.stage.outputs.changed == 'true'
+        if: steps.prepare.outputs.should_publish == 'true' && steps.stage.outputs.changed == 'true'
         run: git push origin HEAD:main
 
       - name: Record publication revision
         id: revision
-        if: steps.prepare.outputs.has_ready == 'true'
+        if: steps.prepare.outputs.should_publish == 'true'
         run: echo "commit_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Preserve Smartsheet write-back metadata
-        if: steps.prepare.outputs.has_ready == 'true'
+        if: steps.prepare.outputs.should_publish == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: seqi-publish-metadata-${{ github.run_id }}
@@ -126,8 +127,8 @@ jobs:
 
   build_pages:
     name: Build GitHub Pages artifact
-    needs: [check_ready, prepare]
-    if: needs.check_ready.outputs.has_ready == 'true' && needs.prepare.outputs.has_ready == 'true'
+    needs: [check_changes, prepare]
+    if: needs.check_changes.outputs.should_publish == 'true' && needs.prepare.outputs.should_publish == 'true'
     runs-on: ubuntu-latest
 
     steps:
@@ -152,8 +153,8 @@ jobs:
 
   deploy_pages:
     name: Deploy GitHub Pages
-    needs: [check_ready, prepare, build_pages]
-    if: needs.check_ready.outputs.has_ready == 'true' && needs.prepare.outputs.has_ready == 'true'
+    needs: [check_changes, prepare, build_pages]
+    if: needs.check_changes.outputs.should_publish == 'true' && needs.prepare.outputs.should_publish == 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -166,8 +167,8 @@ jobs:
 
   writeback:
     name: Mark deployed records as published
-    needs: [check_ready, prepare, deploy_pages]
-    if: needs.check_ready.outputs.has_ready == 'true' && needs.prepare.outputs.has_ready == 'true' && needs.deploy_pages.result == 'success'
+    needs: [check_changes, prepare, deploy_pages]
+    if: needs.check_changes.outputs.should_publish == 'true' && needs.prepare.outputs.should_publish == 'true' && needs.deploy_pages.result == 'success'
     runs-on: ubuntu-latest
 
     steps:
