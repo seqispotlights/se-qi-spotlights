@@ -53,7 +53,7 @@ const SUSTAINABILITY_CATEGORIES = Object.freeze([
 
 /* ---- FILTER TAXONOMY ---- */
 /* These define the sidebar checkbox groups.
-   Filters apply only to regular Projects, not Training & Capacity-Building Initiatives. */
+   Filters apply to Projects and Training & Capacity-Building Initiatives. */
 const FILTER_GROUPS = [
     {
         label: "Province / Territory",
@@ -249,7 +249,7 @@ function renderInitiatives() {
     const section = document.getElementById("initiativesSection");
     if (!grid) return;
 
-    const visibleInitiatives = INITIATIVES;
+    const visibleInitiatives = INITIATIVES.filter(projectMatchesFilters);
 
     grid.innerHTML = "";
 
