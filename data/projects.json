@@ -469,6 +469,76 @@
     ]
   },
   {
+    "id": "SEQI-0010",
+    "type": "project",
+    "title": "Reducing the Climate Impact of Metered-Dose Inhalers",
+    "photo": "images/project10.png",
+    "photoAlt": "Reducing the Climate Impact of Metered-Dose Inhalers",
+    "province": "British Columbia",
+    "publishedOn": "12 August 2026",
+    "contactName": "Morgan Flynn, Nicola Tam",
+    "email": "morgan.flynn@interiorhealth.ca",
+    "organization": "Interior Health",
+    "department": "Family Practice",
+    "stage": "Complete",
+    "healthcareSetting": "Primary Care",
+    "description": "This project was a collaboration between a primary care pharmacist and a family physician to reduce the environmental impact of inhaler prescribing in primary care. The initiative focused on optimizing respiratory care by assessing whether inhalers were needed, identifying opportunities for deprescribing when clinically appropriate, switching patients to lower-carbon dry powder inhalers, and providing education on inhaler disposal. Patients’ experiences with team-based care were also explored, including the role of sustainability considerations and the value of in-depth conversations in healthcare decision-making.",
+    "cobenefit": "The Toolkit offers helpful reinforcement of existing knowledge and the reminder to consistently apply a sustainability lens when completing quality improvement work.",
+    "sustainabilityPrinciples": [
+      "Prevention",
+      "Stewardship / Appropriateness",
+      "Mitigation / Decarbonization",
+      "Clinical Specialties or Treatment Modality"
+    ],
+    "sustainabilityOpportunities": [
+      {
+        "name": "Prevention",
+        "explanation": "Supporting the optimal management of respiratory diseases and avoiding unnecessary or inappropriate treatment."
+      },
+      {
+        "name": "Stewardship / Appropriateness",
+        "explanation": "Reducing unnecessary inhaler prescribing and identifying opportunities for deprescribing to facilitate appropriate treatments and lower overall consumption of medical resources."
+      },
+      {
+        "name": "Mitigation / Decarbonization",
+        "explanation": "Testing a more comprehensive and adaptable care approach through team-based care, involving collaboration between physicians, pharmacists, and patients. Educating patients on proper inhaler disposal and recycling practices.Educating patients on proper inhaler disposal and recycling practices."
+      },
+      {
+        "name": "Clinical Specialties or Treatment Modality",
+        "explanation": "Lowering the carbon footprint of respiratory care by reassessing inhaler prescribing practices from a sustainability-focused lens."
+      }
+    ],
+    "metrics": {
+      "environmental": [
+        "Change in overall carbon emissions from inhaler prescribing pre- and post-intervention using life cycle assessment datasets."
+      ],
+      "activity": [
+        "EMR-derived prescribing data for inhalers (pre- and post-intervention).",
+        "Number of inhaler switches to lower-carbon alternatives where appropriate.",
+        "Number of deprescribing actions or prescription reassessments following patient review.",
+        "Number of team-based care education sessions completed."
+      ]
+    },
+    "domainsOfQuality": [
+      {
+        "name": "Efficiency",
+        "explanation": "Optimizes healthcare resources by reducing unnecessary prescribing, as well as deprescribing when appropriate."
+      },
+      {
+        "name": "Patient-Centredness / Respect",
+        "explanation": "Supports shared decision-making that incorporates patient lifestyle, preferences, and perspectives on environmental sustainability into their respiratory care."
+      },
+      {
+        "name": "Appropriateness",
+        "explanation": "Ensures treatment decisions align with individual patients’ health goals through personalized assessment and education."
+      },
+      {
+        "name": "Accessibility",
+        "explanation": "Improves access to respiratory care expertise, education, and pharmacist-led support within primary care."
+      }
+    ]
+  },
+  {
     "id": "SEQI-0011",
     "type": "project",
     "title": "Digitizing Lab Results in Nephrology Services",
