@@ -1,0 +1,34 @@
+name: Generate Spotlight Preview
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate-preview:
+    name: Generate preview JSON
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Generate projects preview
+        env:
+          SMARTSHEET_ACCESS_TOKEN: ${{ secrets.SMARTSHEET_ACCESS_TOKEN }}
+          SMARTSHEET_SHEET_ID: ${{ secrets.SMARTSHEET_SHEET_ID }}
+        run: node scripts/generate-projects-preview.mjs
+
+      - name: Upload projects preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: smartsheet-spotlight-preview
+          path: data/projects.preview.json
+          if-no-files-found: error

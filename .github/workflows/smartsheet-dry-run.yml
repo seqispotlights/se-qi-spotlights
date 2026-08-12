@@ -1,0 +1,27 @@
+name: Smartsheet Connection Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    name: Dry run
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Run Smartsheet dry run
+        env:
+          SMARTSHEET_ACCESS_TOKEN: ${{ secrets.SMARTSHEET_ACCESS_TOKEN }}
+          SMARTSHEET_SHEET_ID: ${{ secrets.SMARTSHEET_SHEET_ID }}
+        run: node scripts/smartsheet-dry-run.mjs

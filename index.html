@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SE-QI Spotlights | CASCADES Canada</title>
+    <meta name="description"
+          content="Explore how healthcare teams across Canada are applying the SE-QI Toolkit to advance sustainable healthcare." />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@600;700;800&family=Lexend+Deca:wght@300;400;500;600&display=swap"
+          rel="stylesheet" />
+
+    <link rel="stylesheet" href="src/style.css" />
+</head>
+
+<body>
+    <!-- ===== STICKY NAV ===== -->
+    <nav class="top-nav" aria-label="Site navigation">
+        <div class="nav-inner">
+            <a href="/" class="nav-brand" aria-label="CASCADES Canada home">
+                <img src="images/logo.png" alt="CASCADES Canada" class="nav-logo" />
+                <img src="images/logo1.png" alt="CASCADES Canada" class="nav-logo" />
+                <img src="images/logo2.png" alt="CASCADES Canada" class="nav-logo" />
+                <img src="images/logo3.png" alt="CASCADES Canada" class="nav-logo" />
+            </a>
+
+            <button class="btn-sidebar-toggle"
+                    id="sidebarToggle"
+                    aria-controls="sidebar"
+                    aria-expanded="false">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M2 4h12M4 8h8M6 12h4"
+                          stroke="currentColor"
+                          stroke-width="1.5"
+                          stroke-linecap="round" />
+                </svg>
+                Filter Projects
+                <span class="filter-badge" id="filterBadge">0</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ===== HERO ===== -->
+    <header class="hero-header">
+        <div class="hero-inner">
+            <h1 class="hero-title">SE-QI Spotlights</h1>
+            <p class="hero-subtitle">
+                Explore how healthcare teams across Canada are applying the SE-QI Toolkit
+                to identify sustainability opportunities and advance quality improvement.
+            </p>
+
+            <p class="hero-cta-text">
+                Using the SE-QI Toolkit? Share your experience and help others put it into practice.
+            </p>
+
+            <a href="https://app.smartsheet.com/b/form/019eadb390d87a69bf1afb7acbe75a4a"
+               class="hero-cta-button"
+               target="_blank"
+               rel="noopener noreferrer">
+                Complete the Spotlight Form →
+            </a>
+        </div>
+    </header>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+
+    <!-- ===== GALLERY SECTION ===== -->
+    <div class="layout">
+        <!-- SIDEBAR: filters apply only to Projects -->
+        <aside class="sidebar" id="sidebar" aria-label="Project filters">
+            <div class="sidebar-header">
+                <span class="sidebar-title">
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                        <path d="M1 3h13M3 7h9M5 11h5"
+                              stroke="currentColor"
+                              stroke-width="1.5"
+                              stroke-linecap="round" />
+                    </svg>
+                    Filter Projects
+                </span>
+
+                <div class="sidebar-actions">
+                    <button class="btn-clear" id="clearFilters" aria-label="Clear all filters">
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                            <path d="M1 1l10 10M11 1L1 11"
+                                  stroke="currentColor"
+                                  stroke-width="1.5"
+                                  stroke-linecap="round" />
+                        </svg>
+                        Clear
+                    </button>
+
+                    <button class="btn-sidebar-close" id="sidebarClose" aria-label="Close project filters">
+                        Close
+                    </button>
+                </div>
+            </div>
+
+            <div id="filterSidebar"></div>
+        </aside>
+
+        <!-- MAIN AREA -->
+        <main class="main-area" id="main">
+            <!-- ===== PROJECTS ===== -->
+            <section class="gallery-section projects-section" aria-labelledby="projectsHeading">
+                <div class="gallery-toolbar">
+                    <div>
+                        <span class="gallery-heading" id="projectsHeading">Projects</span>
+                        <span class="gallery-heading-count" id="projectCount"></span>
+                    </div>
+
+                    <a href="#dashboard" class="btn-jump-to-dashboard" aria-label="Jump to dashboard">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                            <rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5" />
+                            <rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5" />
+                            <rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5" />
+                            <rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5" />
+                        </svg>
+                        View Dashboard
+                    </a>
+                </div>
+
+                <div class="project-grid" id="projectGrid" role="list" aria-label="Project gallery">
+                    <!-- Project cards injected by src/script.js -->
+                </div>
+
+                <div class="empty-state" id="emptyState" aria-live="polite">
+                    <div class="empty-icon">Search</div>
+                    <h3>No projects match these filters</h3>
+                    <p>Try removing some filters to see more projects.</p>
+                    <button class="btn-reset" id="clearFiltersEmpty">Clear Filters</button>
+                </div>
+            </section>
+
+            <!-- ===== TRAINING & CAPACITY-BUILDING INITIATIVES ===== -->
+            <section class="gallery-section initiatives-section"
+                     id="initiativesSection"
+                     aria-labelledby="initiativesHeading">
+                <div class="initiative-section-header">
+                    <div>
+
+                        <h2 class="initiative-section-title" id="initiativesHeading">
+                            Training &amp; Capacity-Building Initiatives
+                        </h2>
+                    </div>
+                </div>
+
+                <div class="initiative-grid"
+                     id="initiativeGrid"
+                     role="list"
+                     aria-label="Training and capacity-building initiatives">
+                    <!-- Initiative cards injected by src/script.js -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ===== DASHBOARD PDF SECTION ===== -->
+    <section class="pdf-section" id="dashboard">
+        <div class="pdf-section-inner">
+            <div class="pdf-section-header">
+                <div class="pdf-section-meta">
+                    
+                    <h2 class="pdf-section-title">SE-QI Spotlight Dashboard</h2>
+                    <p class="pdf-section-desc">
+                        A snapshot of how healthcare teams across Canada are advancing sustainable
+                        quality improvement through the SE-QI Toolkit. Updated weekly.
+                    </p>
+                </div>
+
+                <a href="dashboard.pdf"
+                   download="SE-QI-Spotlight-Dashboard.pdf"
+                   class="btn-download-pdf">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                        <polyline points="14 2 14 8 20 8" />
+                        <line x1="12" y1="15" x2="12" y2="10" />
+                        <polyline points="9 12 12 15 15 12" />
+                    </svg>
+                    Download PDF
+                </a>
+            </div>
+
+            <div class="pdf-frame-wrap">
+                <iframe src="dashboard.pdf#toolbar=0&view=FitH"
+                        width="100%"
+                        height="900"
+                        style="border: none; border-radius: 16px;"
+                        title="SE-QI Dashboard"></iframe>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== MODAL ===== -->
+    <div class="modal-overlay"
+         id="modalOverlay"
+         role="dialog"
+         aria-modal="true"
+         aria-label="Project details">
+        <div class="modal-dialog">
+            <button class="modal-close" id="modalClose" aria-label="Close project details">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                    <path d="M2 2l12 12M14 2L2 14"
+                          stroke="currentColor"
+                          stroke-width="2"
+                          stroke-linecap="round" />
+                </svg>
+            </button>
+
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script src="src/script.js"></script>
+    <button class="btn-scroll-top" id="scrollTopBtn" aria-label="Back to top">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="18 15 12 9 6 15" />
+        </svg>
+    </button>
+</body>
+</html>
