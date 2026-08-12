@@ -469,72 +469,53 @@
     ]
   },
   {
-    "id": "SEQI-0010",
+    "id": "SEQI-0011",
     "type": "project",
-    "title": "Reducing the Climate Impact of Metered-Dose Inhalers",
-    "photo": "images/project10.png",
-    "photoAlt": "Reducing the Climate Impact of Metered-Dose Inhalers",
+    "title": "Digitizing Lab Results in Nephrology Services",
+    "photo": "images/project11.jpg",
+    "photoAlt": "Digitizing Lab Results in Nephrology Services",
     "province": "British Columbia",
-    "publishedOn": "11 August 2026",
-    "contactName": "Morgan Flynn, Nicola Tam",
-    "email": "morgan.flynn@interiorhealth.ca",
+    "publishedOn": "14 July 2026",
+    "contactName": "Nicole Terhune",
+    "email": "nicole.terhune@interiorhealth.ca",
     "organization": "Interior Health",
-    "department": "Family Practice",
+    "department": "Nephrology",
     "stage": "Complete",
-    "healthcareSetting": "Primary Care",
-    "description": "This project was a collaboration between a primary care pharmacist and a family physician to reduce the environmental impact of inhaler prescribing in primary care. The initiative focused on optimizing respiratory care by assessing whether inhalers were needed, identifying opportunities for deprescribing when clinically appropriate, switching patients to lower-carbon dry powder inhalers, and providing education on inhaler disposal. Patients’ experiences with team-based care were also explored, including the role of sustainability considerations and the value of in-depth conversations in healthcare decision-making.",
-    "cobenefit": "The Toolkit offers helpful reinforcement of existing knowledge and the reminder to consistently apply a sustainability lens when completing quality improvement work.",
+    "healthcareSetting": "Outpatient renal clinic",
+    "description": "An initiative in an outpatient renal clinic aimed to reduce paper waste by digitizing the receipt of community laboratory blood work results. The previous fax-based process generated approximately 70–120 pages per day, including cover sheets and duplicate reports that were routinely discarded.",
+    "cobenefit": "The guidance for identifying and quantifying environmental impacts within QI projects, particularly through CO₂e estimation tools for paper use.",
     "sustainabilityPrinciples": [
-      "Prevention",
-      "Stewardship / Appropriateness",
       "Mitigation / Decarbonization",
-      "Clinical Specialties or Treatment Modality"
+      "Adaptation and Resilience"
     ],
     "sustainabilityOpportunities": [
       {
-        "name": "Prevention",
-        "explanation": "Supporting the optimal management of respiratory diseases and avoiding unnecessary or inappropriate treatment."
-      },
-      {
-        "name": "Stewardship / Appropriateness",
-        "explanation": "Reducing unnecessary inhaler prescribing and identifying opportunities for deprescribing to facilitate appropriate treatments and lower overall consumption of medical resources."
-      },
-      {
         "name": "Mitigation / Decarbonization",
-        "explanation": "Testing a more comprehensive and adaptable care approach through team-based care, involving collaboration between physicians, pharmacists, and patients. Educating patients on proper inhaler disposal and recycling practices.Educating patients on proper inhaler disposal and recycling practices."
+        "explanation": "Digitizing processes to improve information flow and reduce reliance on paper-based systems. Reducing paper use and associated waste through elimination of printed faxes. Reducing energy associated with printing and paper handling."
       },
       {
-        "name": "Clinical Specialties or Treatment Modality",
-        "explanation": "Lowering the carbon footprint of respiratory care by reassessing inhaler prescribing practices from a sustainability-focused lens."
+        "name": "Adaptation and Resilience",
+        "explanation": "Supporting provider resilience through more efficient, streamlined digital workflows."
       }
     ],
     "metrics": {
       "environmental": [
-        "Change in overall carbon emissions from inhaler prescribing pre- and post-intervention using life cycle assessment datasets."
+        "Estimated CO₂e emissions avoided through reduced paper use and elimination of printed faxes. Calculated at",
+        "26,622 sheets printed annually * 0.006 kg CO2e per sheet = ~160 kg CO2e avoided annually."
       ],
       "activity": [
-        "EMR-derived prescribing data for inhalers (pre- and post-intervention).",
-        "Number of inhaler switches to lower-carbon alternatives where appropriate.",
-        "Number of deprescribing actions or prescription reassessments following patient review.",
-        "Number of team-based care education sessions completed."
+        "Reduction in the number of printed pages from faxed community laboratory results per year.",
+        "Nicole’s Calculations: 102 sheets per day * 261 workdays in 2025 = ~26,622 avoided printed sheets annually."
       ]
     },
     "domainsOfQuality": [
       {
         "name": "Efficiency",
-        "explanation": "Optimizes healthcare resources by reducing unnecessary prescribing, as well as deprescribing when appropriate."
+        "explanation": "Improved use of staff time and resources by eliminating duplicate and unnecessary paper-based processes and reducing the need to manage printed faxed results."
       },
       {
-        "name": "Patient-Centredness / Respect",
-        "explanation": "Supports shared decision-making that incorporates patient lifestyle, preferences, and perspectives on environmental sustainability into their respiratory care."
-      },
-      {
-        "name": "Appropriateness",
-        "explanation": "Ensures treatment decisions align with individual patients’ health goals through personalized assessment and education."
-      },
-      {
-        "name": "Accessibility",
-        "explanation": "Improves access to respiratory care expertise, education, and pharmacist-led support within primary care."
+        "name": "Timeliness",
+        "explanation": "Faster and more direct access to laboratory results through digital systems, reducing delays associated with receiving, sorting, and processing faxed documents."
       }
     ]
   },
