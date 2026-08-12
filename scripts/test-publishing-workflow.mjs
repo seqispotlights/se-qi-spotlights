@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -10,6 +10,7 @@ import {
   PUBLISHED_STATUS,
   READY_TO_PUBLISH_STATUS,
   ValidationError,
+  generatePreviewWithAttachments,
   generatePreviewRecords
 } from "./generate-projects-preview.mjs";
 import {
@@ -286,6 +287,82 @@ test("Phase 2B image validation is case-sensitive", async () => {
   const imagesDirectory = await tempImages(["case.jpg"]);
   assert.throws(
     () => generatePreviewRecords(sheet([projectRow({ photoFilename: "Case.JPG" })]), { imagesDirectory }),
+    ValidationError
+  );
+});
+
+test("Preview uses an existing Website photo filename without attachment lookup", async () => {
+  const imagesDirectory = await tempImages(["existing.jpg"]);
+  const result = await generatePreviewWithAttachments(sheet([projectRow()]), {
+    imagesDirectory,
+    attachmentClient: forbiddenAttachmentClient()
+  });
+  assert.equal(result.records[0].photo, "images/existing.jpg");
+  assert.equal(result.downloadedImages.length, 0);
+});
+
+test("Preview resolves and downloads an image attachment when photo filename is blank", async () => {
+  const imagesDirectory = await tempImages([]);
+  const sourceRow = projectRow({
+    recordId: "SEQI-0017",
+    rowId: 17,
+    photoFilename: ""
+  });
+  const attachments = new Map([
+    [
+      "SEQI-0017",
+      [
+        {
+          id: 170,
+          name: "spotlight-photo.jpeg",
+          sizeInBytes: 1024
+        }
+      ]
+    ]
+  ]);
+  const result = await generatePreviewWithAttachments(sheet([sourceRow]), {
+    imagesDirectory,
+    attachmentClient: attachmentClientFor(attachments)
+  });
+
+  assert.equal(result.records[0].photo, "images/seqi-0017.jpg");
+  assert.deepEqual(result.downloadedImages.map(image => image.filename), ["seqi-0017.jpg"]);
+  assert.equal(
+    await readFile(join(imagesDirectory, "seqi-0017.jpg"), "utf8"),
+    "synthetic image bytes"
+  );
+  assert.equal(
+    sourceRow.cells.find(
+      item => item.columnId === columnIdByTitle.get(COMMON_COLUMN_TITLES.photoFilename)
+    ).value,
+    ""
+  );
+});
+
+test("Preview fails when neither a photo filename nor valid image attachment exists", async () => {
+  const imagesDirectory = await tempImages([]);
+  await assert.rejects(
+    () =>
+      generatePreviewWithAttachments(
+        sheet([projectRow({ recordId: "SEQI-0018", photoFilename: "" })]),
+        {
+          imagesDirectory,
+          attachmentClient: attachmentClientFor(
+            new Map([
+              [
+                "SEQI-0018",
+                [
+                  {
+                    id: 180,
+                    name: "notes.pdf",
+                    sizeInBytes: 1024
+                  }
+                ]
+              ]
+            ])
+          )
+        }
+      ),
     ValidationError
   );
 });

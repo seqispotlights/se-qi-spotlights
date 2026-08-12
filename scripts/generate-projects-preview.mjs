@@ -1,11 +1,12 @@
 import { readdirSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
-import { dirname } from "node:path";
+import { dirname, extname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 
 export const SMARTSHEET_API_BASE = "https://api.smartsheet.com/2.0";
 const PREVIEW_OUTPUT_PATH = "data/projects.preview.json";
 export const DEFAULT_IMAGES_DIRECTORY = "images";
+export const MAX_PREVIEW_IMAGE_BYTES = 10 * 1024 * 1024;
 export const READY_TO_PUBLISH_STATUS = "Ready to publish";
 export const PUBLISHED_STATUS = "Published";
 export const PROJECT_TOOLKIT_USE = "For a specific project";
@@ -24,6 +25,8 @@ const WEBSITE_LABEL_OVERRIDES = new Map([
     "Clinical Specialties or Treatment Modality"
   ]
 ]);
+const SUPPORTED_PREVIEW_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+const PREVIEW_JPEG_EXTENSIONS = new Set([".jpg", ".jpeg"]);
 
 export const EXPECTED_COLUMN_TITLES = [
   "Primary Column",
@@ -536,6 +539,178 @@ export function buildCaseSensitiveImageFilenameSet(imagesDirectory = DEFAULT_IMA
     .map(entry => entry.name));
 }
 
+function getSupportedPreviewImageExtension(attachment) {
+  const extension = extname(trimText(attachment?.name)).toLowerCase();
+  if (!SUPPORTED_PREVIEW_IMAGE_EXTENSIONS.has(extension)) return "";
+  return PREVIEW_JPEG_EXTENSIONS.has(extension) ? ".jpg" : extension;
+}
+
+function getAttachmentSizeBytes(attachment) {
+  if (Number.isFinite(attachment?.sizeInBytes)) return Number(attachment.sizeInBytes);
+  if (Number.isFinite(attachment?.size)) return Number(attachment.size);
+  if (Number.isFinite(attachment?.sizeInKb)) return Number(attachment.sizeInKb) * 1024;
+  return undefined;
+}
+
+export function selectSinglePreviewImageAttachment(recordId, attachments) {
+  const supported = (attachments || []).filter(attachment =>
+    getSupportedPreviewImageExtension(attachment)
+  );
+
+  if (supported.length === 0) {
+    throw new ValidationError([
+      {
+        recordId,
+        issue: "Expected exactly one supported image attachment; found 0"
+      }
+    ]);
+  }
+
+  if (supported.length > 1) {
+    throw new ValidationError([
+      {
+        recordId,
+        issue: `Expected exactly one supported image attachment; found ${supported.length}`
+      }
+    ]);
+  }
+
+  const [attachment] = supported;
+  const sizeBytes = getAttachmentSizeBytes(attachment);
+  if (sizeBytes !== undefined && sizeBytes > MAX_PREVIEW_IMAGE_BYTES) {
+    throw new ValidationError([
+      {
+        recordId,
+        issue: "Image attachment exceeds 10 MB"
+      }
+    ]);
+  }
+
+  return attachment;
+}
+
+export function generatedPreviewImageFilename(recordId, attachment) {
+  const stem = trimText(recordId)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  const extension = getSupportedPreviewImageExtension(attachment);
+
+  if (!stem) {
+    throw new ValidationError([
+      {
+        recordId: recordId || "<missing>",
+        issue: "Website record ID cannot be converted into an image filename"
+      }
+    ]);
+  }
+
+  if (!extension) {
+    throw new ValidationError([
+      {
+        recordId,
+        issue: "Unsupported image attachment type"
+      }
+    ]);
+  }
+
+  return `${stem}${extension}`;
+}
+
+function previewValidationErrors(error, recordId) {
+  if (error instanceof ValidationError) return error.errors;
+  return [
+    {
+      recordId: recordId || "<missing>",
+      issue: error.message
+    }
+  ];
+}
+
+export async function generatePreviewWithAttachments(sheet, options = {}) {
+  const rows = Array.isArray(sheet.rows) ? sheet.rows : [];
+  const columnLookup = buildColumnLookup(sheet.columns || []);
+  const eligiblePublicationStatuses =
+    options.eligiblePublicationStatuses || [READY_TO_PUBLISH_STATUS];
+  const approvedRows = rows.filter(row =>
+    eligiblePublicationStatuses.includes(
+      getCellText(row, columnLookup.get(COMMON_COLUMN_TITLES.publicationStatus))
+    )
+  );
+  const imagesDirectory = options.imagesDirectory || DEFAULT_IMAGES_DIRECTORY;
+  const photoFilenameByRecordId = new Map();
+  const downloadedImages = [];
+  const errors = [];
+
+  await mkdir(imagesDirectory, { recursive: true });
+  const availableImageFilenames = buildCaseSensitiveImageFilenameSet(imagesDirectory);
+
+  for (const row of approvedRows) {
+    const recordId = rowIdentifier(row, columnLookup);
+    const sourceFilename = getCellText(
+      row,
+      columnLookup.get(COMMON_COLUMN_TITLES.photoFilename)
+    );
+
+    if (sourceFilename) {
+      photoFilenameByRecordId.set(recordId, sourceFilename);
+      continue;
+    }
+
+    try {
+      if (!options.attachmentClient) {
+        throw new Error("Preview attachment client is required when Website photo filename is blank");
+      }
+
+      const attachments = await options.attachmentClient.listRowAttachments(row, recordId);
+      const selectedAttachment = selectSinglePreviewImageAttachment(recordId, attachments);
+      const filename = generatedPreviewImageFilename(recordId, selectedAttachment);
+
+      if (!availableImageFilenames.has(filename)) {
+        const metadata = await options.attachmentClient.getAttachmentMetadata(
+          selectedAttachment,
+          recordId
+        );
+        const bytes = await options.attachmentClient.downloadAttachment(metadata, recordId);
+        if (bytes.length > MAX_PREVIEW_IMAGE_BYTES) {
+          throw new ValidationError([
+            {
+              recordId,
+              issue: "Downloaded image exceeds 10 MB"
+            }
+          ]);
+        }
+
+        await writeFile(join(imagesDirectory, filename), bytes);
+        availableImageFilenames.add(filename);
+        downloadedImages.push({
+          recordId,
+          filename,
+          bytes: bytes.length
+        });
+      }
+
+      photoFilenameByRecordId.set(recordId, filename);
+    } catch (error) {
+      errors.push(...previewValidationErrors(error, recordId));
+    }
+  }
+
+  if (errors.length > 0) throw new ValidationError(errors);
+
+  const generated = generatePreviewRecords(sheet, {
+    ...options,
+    eligiblePublicationStatuses,
+    photoFilenameByRecordId,
+    availableImageFilenames
+  });
+
+  return {
+    ...generated,
+    downloadedImages
+  };
+}
+
 function validateImageFile(row, columnLookup, availableImageFilenames, errors, options = {}) {
   const recordId = rowIdentifier(row, columnLookup);
   const filename = getFinalPhotoFilename(row, columnLookup, options);
@@ -679,6 +854,56 @@ async function fetchSheet(sheetId, accessToken) {
   return response.json();
 }
 
+async function fetchSmartsheetJson(path, accessToken, operation) {
+  const response = await fetch(`${SMARTSHEET_API_BASE}${path}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json"
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`${operation} failed with HTTP ${response.status} ${response.statusText}.`);
+  }
+
+  return response.json();
+}
+
+function makePreviewAttachmentClient(sheetId, accessToken) {
+  return {
+    async listRowAttachments(row) {
+      const response = await fetchSmartsheetJson(
+        `/sheets/${encodeURIComponent(sheetId)}/rows/${encodeURIComponent(row.id)}?include=attachments`,
+        accessToken,
+        "Fetch row attachments"
+      );
+      return response.attachments || [];
+    },
+    async getAttachmentMetadata(attachment) {
+      return fetchSmartsheetJson(
+        `/sheets/${encodeURIComponent(sheetId)}/attachments/${encodeURIComponent(attachment.id)}`,
+        accessToken,
+        "Fetch attachment metadata"
+      );
+    },
+    async downloadAttachment(metadata) {
+      if (!metadata?.url) {
+        throw new Error("Smartsheet attachment metadata did not include a download URL.");
+      }
+
+      const response = await fetch(metadata.url);
+      if (!response.ok) {
+        throw new Error(
+          `Attachment download failed with HTTP ${response.status} ${response.statusText}.`
+        );
+      }
+
+      return Buffer.from(await response.arrayBuffer());
+    }
+  };
+}
+
 function logSafeSummary(summary) {
   console.log("Smartsheet API connection succeeded.");
   console.log(`Total Smartsheet rows read: ${summary.totalRowsRead}`);
@@ -689,6 +914,7 @@ function logSafeSummary(summary) {
   console.log(
     `Generated Website record IDs: ${summary.generatedWebsiteRecordIds.join(", ") || "(none)"}`
   );
+  console.log(`Downloaded preview image count: ${summary.downloadedPreviewImageCount || 0}`);
   console.log(`Preview file location: ${PREVIEW_OUTPUT_PATH}`);
 }
 
@@ -703,14 +929,19 @@ async function main() {
   const accessToken = requireEnv("SMARTSHEET_ACCESS_TOKEN");
   const sheetId = requireEnv("SMARTSHEET_SHEET_ID");
   const sheet = await fetchSheet(sheetId, accessToken);
-  const { records, summary } = generatePreviewRecords(sheet);
+  const { records, summary, downloadedImages } = await generatePreviewWithAttachments(sheet, {
+    attachmentClient: makePreviewAttachmentClient(sheetId, accessToken)
+  });
   const serialized = `${JSON.stringify(records, null, 2)}\n`;
 
   JSON.parse(serialized);
 
   await mkdir(dirname(PREVIEW_OUTPUT_PATH), { recursive: true });
   await writeFile(PREVIEW_OUTPUT_PATH, serialized, "utf8");
-  logSafeSummary(summary);
+  logSafeSummary({
+    ...summary,
+    downloadedPreviewImageCount: downloadedImages.length
+  });
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] || "").href) {

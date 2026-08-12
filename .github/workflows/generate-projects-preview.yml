@@ -26,9 +26,11 @@ jobs:
           SMARTSHEET_SHEET_ID: ${{ secrets.SMARTSHEET_SHEET_ID }}
         run: node scripts/generate-projects-preview.mjs
 
-      - name: Upload projects preview
+      - name: Upload projects preview and resolved images
         uses: actions/upload-artifact@v4
         with:
           name: smartsheet-spotlight-preview
-          path: data/projects.preview.json
+          path: |
+            data/projects.preview.json
+            images
           if-no-files-found: error
