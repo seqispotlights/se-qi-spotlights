@@ -29,7 +29,7 @@ export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 export const WEBSITE_RECORD_ID_PATTERN = /^SEQI-(\d{4,})$/;
 export const DO_NOT_PUBLISH_STATUS = "Do not publish";
 
-const SUPPORTED_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+const SUPPORTED_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"]);
 const JPEG_EXTENSIONS = new Set([".jpg", ".jpeg"]);
 
 export class PublishValidationError extends Error {

@@ -22,7 +22,14 @@ const WEBSITE_LABEL_OVERRIDES = new Map([
   ["Climate resilience and adaptation", "Adaptation and Resilience"],
   ["Clinical specialty or treatment modality", "Clinical Specialties or Treatment Modality"]
 ]);
-const SUPPORTED_PREVIEW_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
+const SUPPORTED_PREVIEW_IMAGE_EXTENSIONS = new Set([
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".heic",
+  ".heif"
+]);
 const PREVIEW_JPEG_EXTENSIONS = new Set([".jpg", ".jpeg"]);
 
 export const EXPECTED_COLUMN_TITLES = [

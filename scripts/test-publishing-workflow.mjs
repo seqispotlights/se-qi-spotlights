@@ -818,7 +818,9 @@ test("Phase 3 reuses an existing canonical image after checking its row attachme
 for (const [name, attachmentName, expectedFilename] of [
   ["JPEG", "photo.jpeg", "seqi-0012.jpg"],
   ["PNG", "photo.PNG", "seqi-0013.png"],
-  ["WebP", "photo.webp", "seqi-0014.webp"]
+  ["WebP", "photo.webp", "seqi-0014.webp"],
+  ["HEIC", "photo.HEIC", "seqi-0015.heic"],
+  ["HEIF", "photo.heif", "seqi-0016.heif"]
 ]) {
   test(`Phase 3 generates stable ${name} filename`, async () => {
     const recordId = expectedFilename.replace(/\.[^.]+$/, "").toUpperCase();
