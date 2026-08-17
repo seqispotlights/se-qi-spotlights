@@ -179,6 +179,13 @@ function forbiddenAttachmentClient() {
   };
 }
 
+function testImageConverter(calls = []) {
+  return async details => {
+    calls.push(details);
+    return Buffer.from(`converted JPEG bytes for ${details.recordId}`);
+  };
+}
+
 async function expectPublishValidation(testName, fn, expectedText) {
   let caught;
   try {
@@ -819,13 +826,14 @@ for (const [name, attachmentName, expectedFilename] of [
   ["JPEG", "photo.jpeg", "seqi-0012.jpg"],
   ["PNG", "photo.PNG", "seqi-0013.png"],
   ["WebP", "photo.webp", "seqi-0014.webp"],
-  ["HEIC", "photo.HEIC", "seqi-0015.heic"],
-  ["HEIF", "photo.heif", "seqi-0016.heif"]
+  ["HEIC", "photo.HEIC", "seqi-0015.jpg"],
+  ["HEIF", "photo.heif", "seqi-0016.jpg"]
 ]) {
-  test(`Phase 3 generates stable ${name} filename`, async () => {
+  test(`Phase 3 generates stable ${name} output filename`, async () => {
     const recordId = expectedFilename.replace(/\.[^.]+$/, "").toUpperCase();
     const imagesDirectory = await tempImages([]);
     const tempDirectory = await mkdtemp(join(tmpdir(), "seqi-test-temp-"));
+    const conversionCalls = [];
     const attachments = new Map([
       [
         recordId,
@@ -842,13 +850,111 @@ for (const [name, attachmentName, expectedFilename] of [
       sheet: sheet([projectRow({ recordId, photoFilename: "" })]),
       imagesDirectory,
       tempDirectory,
-      attachmentClient: attachmentClientFor(attachments)
+      attachmentClient: attachmentClientFor(attachments),
+      imageConverter: testImageConverter(conversionCalls)
     });
     assert.equal(generatedImageFilename(recordId, attachments.get(recordId)[0]), expectedFilename);
     assert.equal(plan.records[0].photo, `images/${expectedFilename}`);
     assert.equal(plan.downloadedImages[0].filename, expectedFilename);
+    assert.equal(conversionCalls.length, name === "HEIC" || name === "HEIF" ? 1 : 0);
   });
 }
+
+test("Phase 3 converts future HEIC and HEIF attachments to JPEG before publication", async () => {
+  const imagesDirectory = await tempImages([]);
+  const tempDirectory = await mkdtemp(join(tmpdir(), "seqi-test-temp-"));
+  const conversionCalls = [];
+  const attachments = new Map([
+    [
+      "SEQI-0024",
+      [
+        {
+          id: 1,
+          name: "future-photo.HEIC",
+          sizeInBytes: 1024
+        }
+      ]
+    ],
+    [
+      "SEQI-0025",
+      [
+        {
+          id: 2,
+          name: "future-photo.heif",
+          sizeInBytes: 1024
+        }
+      ]
+    ]
+  ]);
+
+  const plan = await buildPublishPlan({
+    sheet: sheet([
+      projectRow({ recordId: "SEQI-0024", photoFilename: "" }),
+      projectRow({ recordId: "SEQI-0025", photoFilename: "" })
+    ]),
+    imagesDirectory,
+    tempDirectory,
+    attachmentClient: attachmentClientFor(attachments, Buffer.from("source HEIC bytes")),
+    imageConverter: testImageConverter(conversionCalls)
+  });
+
+  assert.deepEqual(
+    plan.records.map(record => record.photo),
+    ["images/seqi-0024.jpg", "images/seqi-0025.jpg"]
+  );
+  assert.deepEqual(
+    plan.writeBackRows.map(row => row.finalPhotoFilename),
+    ["seqi-0024.jpg", "seqi-0025.jpg"]
+  );
+  assert.equal(conversionCalls.length, 2);
+
+  const downloadedByRecordId = new Map(plan.downloadedImages.map(image => [image.recordId, image]));
+  assert.equal(
+    await readFile(downloadedByRecordId.get("SEQI-0024").tempPath, "utf8"),
+    "converted JPEG bytes for SEQI-0024"
+  );
+  assert.equal(
+    await readFile(downloadedByRecordId.get("SEQI-0025").tempPath, "utf8"),
+    "converted JPEG bytes for SEQI-0025"
+  );
+});
+
+test("Phase 3 replaces an existing HEIC website image with a JPG output", async () => {
+  const imagesDirectory = await tempImages(["seqi-0001.heic"]);
+  const tempDirectory = await mkdtemp(join(tmpdir(), "seqi-test-temp-"));
+  const attachments = new Map([
+    [
+      "SEQI-0001",
+      [
+        {
+          id: 1,
+          name: "legacy-photo.heic",
+          sizeInBytes: 1024
+        }
+      ]
+    ]
+  ]);
+
+  const plan = await buildPublishPlan({
+    sheet: sheet([projectRow({ recordId: "SEQI-0001", photoFilename: "seqi-0001.heic" })]),
+    currentRecords: [
+      {
+        id: "SEQI-0001",
+        photo: "images/seqi-0001.heic",
+        publishedOn: "14 July 2026"
+      }
+    ],
+    imagesDirectory,
+    tempDirectory,
+    attachmentClient: attachmentClientFor(attachments, Buffer.from("source HEIC bytes")),
+    imageConverter: testImageConverter()
+  });
+
+  assert.equal(plan.records[0].photo, "images/seqi-0001.jpg");
+  assert.equal(plan.downloadedImages[0].filename, "seqi-0001.jpg");
+  assert.deepEqual(plan.obsoleteImageFilenames, ["seqi-0001.heic"]);
+  assert.equal(plan.writeBackRows[0].finalPhotoFilename, "seqi-0001.jpg");
+});
 
 test("Phase 3 fails when no supported image attachment exists", async () => {
   const imagesDirectory = await tempImages([]);

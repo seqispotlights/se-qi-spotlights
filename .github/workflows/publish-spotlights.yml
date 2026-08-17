@@ -33,6 +33,13 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Install HEIC conversion support
+        run: |
+          if ! command -v heif-convert >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y libheif-examples
+          fi
+
       - name: Check publication queue
         id: check
         env:
@@ -57,6 +64,13 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+
+      - name: Install HEIC conversion support
+        run: |
+          if ! command -v heif-convert >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y libheif-examples
+          fi
 
       - name: Run publishing tests and syntax checks
         run: |

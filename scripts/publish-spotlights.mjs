@@ -1,8 +1,10 @@
 import { existsSync } from "node:fs";
-import { appendFile, copyFile, mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { appendFile, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, extname, join } from "node:path";
 import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
+import { promisify } from "node:util";
 import {
   APPROVED_SUSTAINABILITY_CATEGORIES,
   COMMON_COLUMN_TITLES,
@@ -31,6 +33,8 @@ export const DO_NOT_PUBLISH_STATUS = "Do not publish";
 
 const SUPPORTED_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"]);
 const JPEG_EXTENSIONS = new Set([".jpg", ".jpeg"]);
+const HEIC_EXTENSIONS = new Set([".heic", ".heif"]);
+const execFileAsync = promisify(execFile);
 
 export class PublishValidationError extends Error {
   constructor(errors) {
@@ -151,7 +155,42 @@ export function sanitizeRecordIdForFilename(recordId) {
 function getSupportedImageExtension(attachment) {
   const extension = extname(trimText(attachment?.name)).toLowerCase();
   if (!SUPPORTED_IMAGE_EXTENSIONS.has(extension)) return "";
+  if (HEIC_EXTENSIONS.has(extension)) return ".jpg";
   return JPEG_EXTENSIONS.has(extension) ? ".jpg" : extension;
+}
+
+function requiresJpegConversion(attachment) {
+  return HEIC_EXTENSIONS.has(extname(trimText(attachment?.name)).toLowerCase());
+}
+
+async function convertHeicAttachmentToJpeg({ recordId, attachment, sourceBytes, tempDirectory }) {
+  const sourceExtension = extname(trimText(attachment?.name)).toLowerCase() || ".heic";
+  const stem = sanitizeRecordIdForFilename(recordId);
+  const sourcePath = join(tempDirectory, `${stem}-source${sourceExtension}`);
+  const outputPath = join(tempDirectory, `${stem}-converted.jpg`);
+
+  await writeFile(sourcePath, sourceBytes);
+
+  try {
+    await execFileAsync(process.env.HEIF_CONVERT_BIN || "heif-convert", [sourcePath, outputPath], {
+      windowsHide: true
+    });
+  } catch (error) {
+    const detail = trimText(error?.stderr) || trimText(error?.message);
+    throw new Error(
+      `HEIC/HEIF image conversion failed for ${recordId}. Ensure heif-convert is installed before publishing.${detail ? ` ${detail}` : ""}`
+    );
+  }
+
+  return readFile(outputPath);
+}
+
+function obsoleteHeicFilename(existingRecord, newFilename) {
+  const existingFilename = extractImageFilename(existingRecord);
+  if (!existingFilename || existingFilename === newFilename) return "";
+  if (!HEIC_EXTENSIONS.has(extname(existingFilename).toLowerCase())) return "";
+
+  return existingFilename;
 }
 
 function getAttachmentSizeBytes(attachment) {
@@ -524,12 +563,14 @@ function toValidationErrors(error, fallbackRecordId) {
 async function resolvePhotoFilename({
   row,
   recordId,
+  existingRecord,
   imagesDirectory,
   existingImageFilenames,
   imageOwnerByFilename,
   plannedImageOwners,
   tempDirectory,
-  attachmentClient
+  attachmentClient,
+  imageConverter
 }) {
   const attachments = await attachmentClient.listRowAttachments(row, recordId);
   const selectedAttachment = selectSingleSupportedImageAttachment(recordId, attachments);
@@ -544,9 +585,26 @@ async function resolvePhotoFilename({
   }
 
   const metadata = await attachmentClient.getAttachmentMetadata(selectedAttachment, recordId);
-  const bytes = await attachmentClient.downloadAttachment(metadata, recordId);
+  let bytes = await attachmentClient.downloadAttachment(metadata, recordId);
   if (bytes.length > MAX_IMAGE_BYTES) {
     throw new PublishValidationError([makeRecordError(recordId, "Downloaded image exceeds 10 MB")]);
+  }
+
+  if (requiresJpegConversion(selectedAttachment)) {
+    bytes = Buffer.from(
+      await imageConverter({
+        recordId,
+        attachment: selectedAttachment,
+        sourceBytes: bytes,
+        tempDirectory
+      })
+    );
+
+    if (bytes.length > MAX_IMAGE_BYTES) {
+      throw new PublishValidationError([
+        makeRecordError(recordId, "Converted JPEG image exceeds 10 MB")
+      ]);
+    }
   }
 
   if (existingImageFilenames.has(filename)) {
@@ -560,7 +618,8 @@ async function resolvePhotoFilename({
     if (Buffer.compare(existingBytes, bytes) === 0) {
       return {
         filename,
-        mode: "reused-generated-existing"
+        mode: "reused-generated-existing",
+        obsoleteFilename: obsoleteHeicFilename(existingRecord, filename)
       };
     }
   }
@@ -574,7 +633,8 @@ async function resolvePhotoFilename({
     mode: existingImageFilenames.has(filename) ? "updated" : "downloaded",
     tempPath,
     bytes: bytes.length,
-    overwrite: existingImageFilenames.has(filename)
+    overwrite: existingImageFilenames.has(filename),
+    obsoleteFilename: obsoleteHeicFilename(existingRecord, filename)
   };
 }
 
@@ -584,7 +644,8 @@ export async function buildPublishPlan({
   imagesDirectory = DEFAULT_IMAGES_DIRECTORY,
   fallbackDate = new Date(),
   tempDirectory,
-  attachmentClient
+  attachmentClient,
+  imageConverter = convertHeicAttachmentToJpeg
 }) {
   const columnLookup = buildColumnLookup(sheet.columns || []);
   const { sheet: effectiveSheet, generatedRecordIdByRowId } = assignMissingReadyRecordIds(
@@ -652,6 +713,7 @@ export async function buildPublishPlan({
   const publishedOnByRecordId = new Map();
   const downloadedImages = [];
   const reusedImageRecordIds = [];
+  const obsoleteImageFilenames = new Set();
 
   for (const row of eligibleRows) {
     const recordId = rowIdentifier(row, columnLookup);
@@ -667,15 +729,18 @@ export async function buildPublishPlan({
       const photo = await resolvePhotoFilename({
         row,
         recordId,
+        existingRecord,
         imagesDirectory,
         existingImageFilenames,
         imageOwnerByFilename,
         plannedImageOwners,
         tempDirectory,
-        attachmentClient
+        attachmentClient,
+        imageConverter
       });
 
       photoFilenameByRecordId.set(recordId, photo.filename);
+      if (photo.obsoleteFilename) obsoleteImageFilenames.add(photo.obsoleteFilename);
 
       if (photo.mode === "downloaded" || photo.mode === "updated") {
         downloadedImages.push({
@@ -791,6 +856,7 @@ export async function buildPublishPlan({
     records,
     serialized,
     downloadedImages,
+    obsoleteImageFilenames: [...obsoleteImageFilenames],
     reusedImageRecordIds,
     writeBackRows,
     publicationAttemptIsoDate: getVancouverIsoDate(fallbackDate),
@@ -878,6 +944,11 @@ async function applyPublishPlan(plan, metadataPath) {
       throw new Error(`Refusing to overwrite existing image path for ${image.recordId}.`);
     }
     await copyFile(image.tempPath, targetPath);
+  }
+
+  for (const filename of plan.obsoleteImageFilenames || []) {
+    const targetPath = join(DEFAULT_IMAGES_DIRECTORY, filename);
+    if (existsSync(targetPath)) await rm(targetPath, { force: true });
   }
 
   await mkdir(dirname(PROJECTS_OUTPUT_PATH), { recursive: true });

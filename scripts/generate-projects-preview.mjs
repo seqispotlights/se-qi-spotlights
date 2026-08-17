@@ -1,7 +1,10 @@
 import { readdirSync } from "node:fs";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { execFile } from "node:child_process";
+import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { dirname, extname, join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { promisify } from "node:util";
 
 export const SMARTSHEET_API_BASE = "https://api.smartsheet.com/2.0";
 const PREVIEW_OUTPUT_PATH = "data/projects.preview.json";
@@ -31,6 +34,8 @@ const SUPPORTED_PREVIEW_IMAGE_EXTENSIONS = new Set([
   ".heif"
 ]);
 const PREVIEW_JPEG_EXTENSIONS = new Set([".jpg", ".jpeg"]);
+const PREVIEW_HEIC_EXTENSIONS = new Set([".heic", ".heif"]);
+const execFileAsync = promisify(execFile);
 
 export const EXPECTED_COLUMN_TITLES = [
   "Primary Column",
@@ -552,7 +557,42 @@ export function buildCaseSensitiveImageFilenameSet(imagesDirectory = DEFAULT_IMA
 function getSupportedPreviewImageExtension(attachment) {
   const extension = extname(trimText(attachment?.name)).toLowerCase();
   if (!SUPPORTED_PREVIEW_IMAGE_EXTENSIONS.has(extension)) return "";
+  if (PREVIEW_HEIC_EXTENSIONS.has(extension)) return ".jpg";
   return PREVIEW_JPEG_EXTENSIONS.has(extension) ? ".jpg" : extension;
+}
+
+function requiresPreviewJpegConversion(attachment) {
+  return PREVIEW_HEIC_EXTENSIONS.has(extname(trimText(attachment?.name)).toLowerCase());
+}
+
+async function convertPreviewHeicAttachmentToJpeg({
+  recordId,
+  attachment,
+  sourceBytes,
+  tempDirectory
+}) {
+  const sourceExtension = extname(trimText(attachment?.name)).toLowerCase() || ".heic";
+  const stem = trimText(recordId)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  const sourcePath = join(tempDirectory, `${stem}-source${sourceExtension}`);
+  const outputPath = join(tempDirectory, `${stem}-converted.jpg`);
+
+  await writeFile(sourcePath, sourceBytes);
+
+  try {
+    await execFileAsync(process.env.HEIF_CONVERT_BIN || "heif-convert", [sourcePath, outputPath], {
+      windowsHide: true
+    });
+  } catch (error) {
+    const detail = trimText(error?.stderr) || trimText(error?.message);
+    throw new Error(
+      `HEIC/HEIF image conversion failed for ${recordId}. Ensure heif-convert is installed before publishing.${detail ? ` ${detail}` : ""}`
+    );
+  }
+
+  return readFile(outputPath);
 }
 
 function getAttachmentSizeBytes(attachment) {
@@ -665,6 +705,9 @@ export async function generatePreviewWithAttachments(sheet, options = {}) {
     )
   );
   const imagesDirectory = options.imagesDirectory || DEFAULT_IMAGES_DIRECTORY;
+  const imageConverter = options.imageConverter || convertPreviewHeicAttachmentToJpeg;
+  const tempDirectory =
+    options.tempDirectory || (await mkdtemp(join(tmpdir(), "seqi-preview-images-")));
   const photoFilenameByRecordId = new Map();
   const downloadedImages = [];
   const errors = [];
@@ -687,7 +730,7 @@ export async function generatePreviewWithAttachments(sheet, options = {}) {
         selectedAttachment,
         recordId
       );
-      const bytes = await options.attachmentClient.downloadAttachment(metadata, recordId);
+      let bytes = await options.attachmentClient.downloadAttachment(metadata, recordId);
       if (bytes.length > MAX_PREVIEW_IMAGE_BYTES) {
         throw new ValidationError([
           {
@@ -695,6 +738,26 @@ export async function generatePreviewWithAttachments(sheet, options = {}) {
             issue: "Downloaded image exceeds 10 MB"
           }
         ]);
+      }
+
+      if (requiresPreviewJpegConversion(selectedAttachment)) {
+        bytes = Buffer.from(
+          await imageConverter({
+            recordId,
+            attachment: selectedAttachment,
+            sourceBytes: bytes,
+            tempDirectory
+          })
+        );
+
+        if (bytes.length > MAX_PREVIEW_IMAGE_BYTES) {
+          throw new ValidationError([
+            {
+              recordId,
+              issue: "Converted JPEG image exceeds 10 MB"
+            }
+          ]);
+        }
       }
 
       const imagePath = join(imagesDirectory, filename);
