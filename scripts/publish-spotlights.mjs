@@ -178,7 +178,7 @@ async function convertHeicAttachmentToJpeg({ recordId, attachment, sourceBytes, 
   } catch (error) {
     const detail = trimText(error?.stderr) || trimText(error?.message);
     throw new Error(
-      `HEIC/HEIF image conversion failed for ${recordId}. Ensure heif-convert is installed before publishing.${detail ? ` ${detail}` : ""}`
+      `HEIC/HEIF image conversion failed for ${recordId}. Ensure heif-convert and HEVC decoder support are installed before publishing.${detail ? ` ${detail}` : ""}`
     );
   }
 

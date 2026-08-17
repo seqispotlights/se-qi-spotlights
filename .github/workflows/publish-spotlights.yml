@@ -35,10 +35,8 @@ jobs:
 
       - name: Install HEIC conversion support
         run: |
-          if ! command -v heif-convert >/dev/null 2>&1; then
-            sudo apt-get update
-            sudo apt-get install -y libheif-examples
-          fi
+          sudo apt-get update
+          sudo apt-get install -y libheif-examples libheif-plugin-libde265
 
       - name: Check publication queue
         id: check
@@ -67,10 +65,8 @@ jobs:
 
       - name: Install HEIC conversion support
         run: |
-          if ! command -v heif-convert >/dev/null 2>&1; then
-            sudo apt-get update
-            sudo apt-get install -y libheif-examples
-          fi
+          sudo apt-get update
+          sudo apt-get install -y libheif-examples libheif-plugin-libde265
 
       - name: Run publishing tests and syntax checks
         run: |
