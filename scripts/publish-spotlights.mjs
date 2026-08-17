@@ -162,7 +162,9 @@ function getAttachmentSizeBytes(attachment) {
 }
 
 export function selectSingleSupportedImageAttachment(recordId, attachments) {
-  const supported = (attachments || []).filter(attachment => getSupportedImageExtension(attachment));
+  const supported = (attachments || []).filter(attachment =>
+    getSupportedImageExtension(attachment)
+  );
 
   if (supported.length === 0) {
     throw new PublishValidationError([
@@ -221,7 +223,12 @@ export function generatedImageFilename(recordId, attachment) {
   return `${stem}${extension}`;
 }
 
-function buildPublicationDateForRow(row, columnLookup, existingRecord, fallbackDate) {
+function buildPublicationDateForRow(
+  row,
+  columnLookup,
+  existingRecord,
+  { allowExistingFallback = false } = {}
+) {
   const sheetDate = getDateCellValue(row, columnLookup.get(COMMON_COLUMN_TITLES.publicationDate));
   const sheetIso = normalizeDateCellToIso(sheetDate);
 
@@ -239,7 +246,7 @@ function buildPublicationDateForRow(row, columnLookup, existingRecord, fallbackD
   }
 
   const existingPublishedOn = trimText(existingRecord?.publishedOn);
-  if (existingPublishedOn) {
+  if (allowExistingFallback && existingPublishedOn) {
     const existingIso = parseWebsiteDateToIso(existingPublishedOn);
     if (!existingIso) {
       throw new Error("Existing website publication date is not a recognized date.");
@@ -253,13 +260,7 @@ function buildPublicationDateForRow(row, columnLookup, existingRecord, fallbackD
     };
   }
 
-  const isoDate = getVancouverIsoDate(fallbackDate);
-  return {
-    publishedOn: toWebsiteDateFromIso(isoDate),
-    isoDate,
-    source: "vancouver-now",
-    wasBlankInSmartsheet: true
-  };
+  throw new Error("Missing required field: Website publication date");
 }
 
 async function smartsheetJson(path, accessToken, { method = "GET", body, operation } = {}) {
@@ -313,7 +314,9 @@ async function fetchAttachmentMetadata(sheetId, accessToken, attachmentId) {
 async function downloadAttachmentBytes(url) {
   const response = await fetch(url);
   if (!response.ok) {
-    throw new Error(`Attachment download failed with HTTP ${response.status} ${response.statusText}.`);
+    throw new Error(
+      `Attachment download failed with HTTP ${response.status} ${response.statusText}.`
+    );
   }
 
   return Buffer.from(await response.arrayBuffer());
@@ -380,7 +383,10 @@ function withCellText(row, column, value) {
   };
 }
 
-export function assignMissingReadyRecordIds(sheet, columnLookup = buildColumnLookup(sheet.columns || [])) {
+export function assignMissingReadyRecordIds(
+  sheet,
+  columnLookup = buildColumnLookup(sheet.columns || [])
+) {
   const rows = Array.isArray(sheet.rows) ? sheet.rows : [];
   const recordIdColumn = columnLookup.get(COMMON_COLUMN_TITLES.recordId);
   const errors = [];
@@ -502,36 +508,13 @@ function toValidationErrors(error, fallbackRecordId) {
 async function resolvePhotoFilename({
   row,
   recordId,
-  columnLookup,
-  existingRecord,
+  imagesDirectory,
   existingImageFilenames,
   imageOwnerByFilename,
   plannedImageOwners,
   tempDirectory,
   attachmentClient
 }) {
-  const sourceFilename = getCellText(row, columnLookup.get(COMMON_COLUMN_TITLES.photoFilename));
-
-  if (
-    sourceFilename &&
-    !sourceFilename.includes("/") &&
-    !sourceFilename.includes("\\") &&
-    existingImageFilenames.has(sourceFilename)
-  ) {
-    return {
-      filename: sourceFilename,
-      mode: "reused-existing-smartsheet"
-    };
-  }
-
-  const existingRecordFilename = extractImageFilename(existingRecord);
-  if (!sourceFilename && existingRecordFilename && existingImageFilenames.has(existingRecordFilename)) {
-    return {
-      filename: existingRecordFilename,
-      mode: "reused-existing-record"
-    };
-  }
-
   const attachments = await attachmentClient.listRowAttachments(row, recordId);
   const selectedAttachment = selectSingleSupportedImageAttachment(recordId, attachments);
   const filename = generatedImageFilename(recordId, selectedAttachment);
@@ -544,6 +527,12 @@ async function resolvePhotoFilename({
     ]);
   }
 
+  const metadata = await attachmentClient.getAttachmentMetadata(selectedAttachment, recordId);
+  const bytes = await attachmentClient.downloadAttachment(metadata, recordId);
+  if (bytes.length > MAX_IMAGE_BYTES) {
+    throw new PublishValidationError([makeRecordError(recordId, "Downloaded image exceeds 10 MB")]);
+  }
+
   if (existingImageFilenames.has(filename)) {
     if (existingOwner && existingOwner !== recordId) {
       throw new PublishValidationError([
@@ -551,16 +540,13 @@ async function resolvePhotoFilename({
       ]);
     }
 
-    return {
-      filename,
-      mode: "reused-generated-existing"
-    };
-  }
-
-  const metadata = await attachmentClient.getAttachmentMetadata(selectedAttachment, recordId);
-  const bytes = await attachmentClient.downloadAttachment(metadata, recordId);
-  if (bytes.length > MAX_IMAGE_BYTES) {
-    throw new PublishValidationError([makeRecordError(recordId, "Downloaded image exceeds 10 MB")]);
+    const existingBytes = await readFile(join(imagesDirectory, filename));
+    if (Buffer.compare(existingBytes, bytes) === 0) {
+      return {
+        filename,
+        mode: "reused-generated-existing"
+      };
+    }
   }
 
   const tempPath = join(tempDirectory, filename);
@@ -569,9 +555,10 @@ async function resolvePhotoFilename({
 
   return {
     filename,
-    mode: "downloaded",
+    mode: existingImageFilenames.has(filename) ? "updated" : "downloaded",
     tempPath,
-    bytes: bytes.length
+    bytes: bytes.length,
+    overwrite: existingImageFilenames.has(filename)
   };
 }
 
@@ -590,15 +577,34 @@ export async function buildPublishPlan({
   );
   const rows = Array.isArray(effectiveSheet.rows) ? effectiveSheet.rows : [];
   const eligibleStatuses = [READY_TO_PUBLISH_STATUS, PUBLISHED_STATUS];
-  const eligibleRows = rows.filter(row =>
-    eligibleStatuses.includes(
-      getCellText(row, columnLookup.get(COMMON_COLUMN_TITLES.publicationStatus))
-    )
-  );
   const readyRows = rows.filter(
     row =>
       getCellText(row, columnLookup.get(COMMON_COLUMN_TITLES.publicationStatus)) ===
       READY_TO_PUBLISH_STATUS
+  );
+  const skippedMissingPublicationDateRows = readyRows
+    .map(row => {
+      const publicationDate = getDateCellValue(
+        row,
+        columnLookup.get(COMMON_COLUMN_TITLES.publicationDate)
+      );
+      if (publicationDate) return undefined;
+
+      return {
+        row,
+        recordId: rowIdentifier(row, columnLookup),
+        rowId: row.id,
+        issue: "Website publication date is missing; row was not published."
+      };
+    })
+    .filter(Boolean);
+  const skippedReadyRowSet = new Set(skippedMissingPublicationDateRows.map(item => item.row));
+  const publishableReadyRows = readyRows.filter(row => !skippedReadyRowSet.has(row));
+  const eligibleRows = rows.filter(
+    row =>
+      eligibleStatuses.includes(
+        getCellText(row, columnLookup.get(COMMON_COLUMN_TITLES.publicationStatus))
+      ) && !skippedReadyRowSet.has(row)
   );
   const doNotPublishRows = rows.filter(
     row => getPublicationStatus(row, columnLookup) === DO_NOT_PUBLISH_STATUS
@@ -628,31 +634,24 @@ export async function buildPublishPlan({
   const plannedImageOwners = new Map();
   const photoFilenameByRecordId = new Map();
   const publishedOnByRecordId = new Map();
-  const publicationIsoByRecordId = new Map();
-  const publicationDateBlankByRecordId = new Map();
   const downloadedImages = [];
   const reusedImageRecordIds = [];
 
   for (const row of eligibleRows) {
     const recordId = rowIdentifier(row, columnLookup);
     const existingRecord = existingRecordsById.get(recordId);
+    const status = getPublicationStatus(row, columnLookup);
 
     try {
-      const publicationDate = buildPublicationDateForRow(
-        row,
-        columnLookup,
-        existingRecord,
-        fallbackDate
-      );
+      const publicationDate = buildPublicationDateForRow(row, columnLookup, existingRecord, {
+        allowExistingFallback: status === PUBLISHED_STATUS
+      });
       publishedOnByRecordId.set(recordId, publicationDate.publishedOn);
-      publicationIsoByRecordId.set(recordId, publicationDate.isoDate);
-      publicationDateBlankByRecordId.set(recordId, publicationDate.wasBlankInSmartsheet);
 
       const photo = await resolvePhotoFilename({
         row,
         recordId,
-        columnLookup,
-        existingRecord,
+        imagesDirectory,
         existingImageFilenames,
         imageOwnerByFilename,
         plannedImageOwners,
@@ -662,12 +661,13 @@ export async function buildPublishPlan({
 
       photoFilenameByRecordId.set(recordId, photo.filename);
 
-      if (photo.mode === "downloaded") {
+      if (photo.mode === "downloaded" || photo.mode === "updated") {
         downloadedImages.push({
           recordId,
           filename: photo.filename,
           tempPath: photo.tempPath,
-          bytes: photo.bytes
+          bytes: photo.bytes,
+          overwrite: photo.overwrite === true
         });
       } else {
         reusedImageRecordIds.push(recordId);
@@ -688,23 +688,41 @@ export async function buildPublishPlan({
 
   let generated;
   try {
-    generated = generatePreviewRecords(effectiveSheet, {
-      eligiblePublicationStatuses: eligibleStatuses,
-      photoFilenameByRecordId,
-      publishedOnByRecordId,
-      availableImageFilenames: finalImageFilenames,
-      fallbackDate
-    });
+    generated = generatePreviewRecords(
+      {
+        ...effectiveSheet,
+        rows: rows.filter(row => !skippedReadyRowSet.has(row))
+      },
+      {
+        eligiblePublicationStatuses: eligibleStatuses,
+        photoFilenameByRecordId,
+        publishedOnByRecordId,
+        availableImageFilenames: finalImageFilenames,
+        fallbackDate
+      }
+    );
   } catch (error) {
     throw new PublishValidationError(toValidationErrors(error));
   }
 
-  validateGeneratedWebsiteRecords(generated.records);
-  const serialized = `${JSON.stringify(generated.records, null, 2)}\n`;
+  const records = [
+    ...generated.records,
+    ...skippedMissingPublicationDateRows
+      .map(item => existingRecordsById.get(item.recordId))
+      .filter(Boolean)
+  ].sort((a, b) =>
+    a.id.localeCompare(b.id, undefined, {
+      numeric: true,
+      sensitivity: "base"
+    })
+  );
+
+  validateGeneratedWebsiteRecords(records);
+  const serialized = `${JSON.stringify(records, null, 2)}\n`;
   JSON.parse(serialized);
 
   const imagePathErrors = [];
-  for (const record of generated.records) {
+  for (const record of records) {
     const filename = extractImageFilename(record);
     if (!filename || !finalImageFilenames.has(filename)) {
       imagePathErrors.push(makeRecordError(record.id, `Missing image file: ${record.photo}`));
@@ -717,30 +735,44 @@ export async function buildPublishPlan({
 
   const statusColumn = columnLookup.get(COMMON_COLUMN_TITLES.publicationStatus);
   const recordIdColumn = columnLookup.get(COMMON_COLUMN_TITLES.recordId);
-  const publicationDateColumn = columnLookup.get(COMMON_COLUMN_TITLES.publicationDate);
   const photoFilenameColumn = columnLookup.get(COMMON_COLUMN_TITLES.photoFilename);
-  const writeBackRows = readyRows
+  const writeBackRows = eligibleRows
     .map(row => {
       const recordId = rowIdentifier(row, columnLookup);
       if (!photoFilenameByRecordId.has(recordId)) return undefined;
+      const status = getPublicationStatus(row, columnLookup);
+      const finalPhotoFilename = photoFilenameByRecordId.get(recordId);
+      const sourcePhotoFilename = getCellText(
+        row,
+        columnLookup.get(COMMON_COLUMN_TITLES.photoFilename)
+      );
+      const shouldMarkPublished = status === READY_TO_PUBLISH_STATUS;
+      const shouldWritePhotoFilename =
+        shouldMarkPublished || sourcePhotoFilename !== finalPhotoFilename;
+
+      if (
+        !shouldMarkPublished &&
+        !shouldWritePhotoFilename &&
+        !generatedRecordIdByRowId.has(row.id)
+      ) {
+        return undefined;
+      }
 
       return {
         recordId,
         rowId: row.id,
         recordIdColumnId: recordIdColumn.id,
         statusColumnId: statusColumn.id,
-        publicationDateColumnId: publicationDateColumn.id,
         photoFilenameColumnId: photoFilenameColumn.id,
-        finalPhotoFilename: photoFilenameByRecordId.get(recordId),
-        finalPublicationIsoDate: publicationIsoByRecordId.get(recordId),
-        publicationDateWasBlank: publicationDateBlankByRecordId.get(recordId) === true,
+        markPublished: shouldMarkPublished,
+        finalPhotoFilename: shouldWritePhotoFilename ? finalPhotoFilename : undefined,
         recordIdWasBlank: generatedRecordIdByRowId.has(row.id)
       };
     })
     .filter(Boolean);
 
   return {
-    records: generated.records,
+    records,
     serialized,
     downloadedImages,
     reusedImageRecordIds,
@@ -749,12 +781,16 @@ export async function buildPublishPlan({
     summary: {
       totalRowsRead: rows.length,
       eligibleRecordCount: eligibleRows.length,
-      readyToPublishCount: readyRows.length,
-      publishedCount: eligibleRows.length - readyRows.length,
+      readyToPublishCount: publishableReadyRows.length,
+      skippedMissingPublicationDateCount: skippedMissingPublicationDateRows.length,
+      skippedMissingPublicationDateRows: skippedMissingPublicationDateRows.map(
+        ({ recordId, rowId, issue }) => ({ recordId, rowId, issue })
+      ),
+      publishedCount: eligibleRows.length - publishableReadyRows.length,
       doNotPublishCount: doNotPublishRows.length,
-      projectCount: generated.records.filter(record => record.type === "project").length,
-      initiativeCount: generated.records.filter(record => record.type === "initiative").length,
-      websiteRecordIds: generated.records.map(record => record.id),
+      projectCount: records.filter(record => record.type === "project").length,
+      initiativeCount: records.filter(record => record.type === "initiative").length,
+      websiteRecordIds: records.map(record => record.id),
       generatedRecordIds: [...generatedRecordIdByRowId.values()],
       downloadedImageCount: downloadedImages.length,
       reusedImageCount: reusedImageRecordIds.length
@@ -762,36 +798,31 @@ export async function buildPublishPlan({
   };
 }
 
-export function buildSmartsheetWriteBackPayload(
-  writeBackRows,
-  { successfulPublicationIsoDate } = {}
-) {
+export function buildSmartsheetWriteBackPayload(writeBackRows) {
   return (writeBackRows || []).map(row => {
-    const cells = [
-      {
+    const cells = [];
+
+    if (row.markPublished) {
+      cells.push({
         columnId: row.statusColumnId,
         value: PUBLISHED_STATUS,
         strict: false
-      },
-      {
+      });
+    }
+
+    if (row.finalPhotoFilename) {
+      cells.push({
         columnId: row.photoFilenameColumnId,
         value: row.finalPhotoFilename,
         strict: false
-      }
-    ];
+      });
+    }
 
     if (row.recordIdWasBlank) {
       cells.push({
         columnId: row.recordIdColumnId,
         value: row.recordId,
         strict: false
-      });
-    }
-
-    if (row.publicationDateWasBlank) {
-      cells.push({
-        columnId: row.publicationDateColumnId,
-        value: successfulPublicationIsoDate || row.finalPublicationIsoDate
       });
     }
 
@@ -809,11 +840,13 @@ export function detectNoChange(currentSerialized, plan) {
 export function detectPublicationWork(currentSerialized, plan) {
   const galleryChanged = !detectNoChange(currentSerialized, plan);
   const hasReadyRows = plan.summary.readyToPublishCount > 0;
+  const hasWriteBackRows = plan.writeBackRows.length > 0;
 
   return {
-    shouldPublish: hasReadyRows || galleryChanged,
+    shouldPublish: hasReadyRows || galleryChanged || hasWriteBackRows,
     galleryChanged,
-    hasReadyRows
+    hasReadyRows,
+    hasWriteBackRows
   };
 }
 
@@ -825,7 +858,7 @@ async function applyPublishPlan(plan, metadataPath) {
   await mkdir(DEFAULT_IMAGES_DIRECTORY, { recursive: true });
   for (const image of plan.downloadedImages) {
     const targetPath = join(DEFAULT_IMAGES_DIRECTORY, image.filename);
-    if (existsSync(targetPath)) {
+    if (existsSync(targetPath) && !image.overwrite) {
       throw new Error(`Refusing to overwrite existing image path for ${image.recordId}.`);
     }
     await copyFile(image.tempPath, targetPath);
@@ -851,19 +884,23 @@ async function applyPublishPlan(plan, metadataPath) {
   );
 }
 
-export async function updateSmartsheetRows(sheetId, accessToken, writeBackRows, options = {}) {
+export async function updateSmartsheetRows(sheetId, accessToken, writeBackRows) {
   if (writeBackRows.length === 0) {
     return {
       updatedCount: 0
     };
   }
 
-  const payload = buildSmartsheetWriteBackPayload(writeBackRows, options);
-  const response = await smartsheetJson(`/sheets/${encodeURIComponent(sheetId)}/rows`, accessToken, {
-    method: "PUT",
-    body: payload,
-    operation: "Smartsheet publication write-back"
-  });
+  const payload = buildSmartsheetWriteBackPayload(writeBackRows);
+  const response = await smartsheetJson(
+    `/sheets/${encodeURIComponent(sheetId)}/rows`,
+    accessToken,
+    {
+      method: "PUT",
+      body: payload,
+      operation: "Smartsheet publication write-back"
+    }
+  );
 
   const failedItems = response.failedItems || response.result?.failedItems || [];
   const successMessage = !response.message || response.message === "SUCCESS";
@@ -885,6 +922,12 @@ function logSafeSummary(summary) {
   console.log(`Total Smartsheet rows read: ${summary.totalRowsRead}`);
   console.log(`Eligible record count: ${summary.eligibleRecordCount}`);
   console.log(`Ready-to-publish count: ${summary.readyToPublishCount}`);
+  console.log(
+    `Skipped missing-publication-date count: ${summary.skippedMissingPublicationDateCount || 0}`
+  );
+  for (const skippedRow of summary.skippedMissingPublicationDateRows || []) {
+    console.log(`Skipped ${skippedRow.recordId}: ${skippedRow.issue}`);
+  }
   console.log(`Already-published count: ${summary.publishedCount}`);
   console.log(`Do-not-publish count: ${summary.doNotPublishCount}`);
   console.log(`Project count: ${summary.projectCount}`);
@@ -937,7 +980,10 @@ async function runCheck() {
 
   logSafeSummary(plan.summary);
   console.log(`Generated gallery changed: ${decision.galleryChanged ? "yes" : "no"}`);
-  console.log(decision.shouldPublish ? "Publishing is required." : "No publishing work is required.");
+  console.log(`Smartsheet write-back required: ${decision.hasWriteBackRows ? "yes" : "no"}`);
+  console.log(
+    decision.shouldPublish ? "Publishing is required." : "No publishing work is required."
+  );
   await writePublicationDecisionOutputs(decision, plan.summary.readyToPublishCount);
 }
 
@@ -953,7 +999,8 @@ async function runPrepare() {
 
   const accessToken = requireEnv("SMARTSHEET_ACCESS_TOKEN");
   const sheetId = requireEnv("SMARTSHEET_SHEET_ID");
-  const metadataPath = process.env.PUBLISH_METADATA_PATH || join(tmpdir(), "seqi-publish-metadata.json");
+  const metadataPath =
+    process.env.PUBLISH_METADATA_PATH || join(tmpdir(), "seqi-publish-metadata.json");
   const { currentSerialized, plan } = await buildCurrentPublicationPlan(sheetId, accessToken);
   const decision = detectPublicationWork(currentSerialized, plan);
   await writePublicationDecisionOutputs(decision, plan.summary.readyToPublishCount);
@@ -967,6 +1014,7 @@ async function runPrepare() {
   await applyPublishPlan(plan, metadataPath);
   logSafeSummary(plan.summary);
   console.log(`Generated gallery changed: ${decision.galleryChanged ? "yes" : "no"}`);
+  console.log(`Smartsheet write-back required: ${decision.hasWriteBackRows ? "yes" : "no"}`);
   console.log(`Prepared Smartsheet write-back count: ${plan.writeBackRows.length}`);
 }
 
@@ -975,28 +1023,11 @@ async function runWriteBack() {
 
   const accessToken = requireEnv("SMARTSHEET_ACCESS_TOKEN");
   const sheetId = requireEnv("SMARTSHEET_SHEET_ID");
-  const metadataPath = process.env.PUBLISH_METADATA_PATH || join(tmpdir(), "seqi-publish-metadata.json");
+  const metadataPath =
+    process.env.PUBLISH_METADATA_PATH || join(tmpdir(), "seqi-publish-metadata.json");
   const metadata = JSON.parse(await readFile(metadataPath, "utf8"));
-  const successfulPublicationIsoDate = getVancouverIsoDate();
-  const hasPendingPublicationDates = (metadata.writeBackRows || []).some(
-    row => row.publicationDateWasBlank
-  );
 
-  if (
-    hasPendingPublicationDates &&
-    metadata.publicationAttemptIsoDate !== successfulPublicationIsoDate
-  ) {
-    throw new Error(
-      "The Vancouver publication date changed during deployment; leaving rows Ready to publish for a safe retry."
-    );
-  }
-
-  const result = await updateSmartsheetRows(
-    sheetId,
-    accessToken,
-    metadata.writeBackRows || [],
-    { successfulPublicationIsoDate }
-  );
+  const result = await updateSmartsheetRows(sheetId, accessToken, metadata.writeBackRows || []);
   console.log(`Smartsheet update count: ${result.updatedCount}`);
 }
 

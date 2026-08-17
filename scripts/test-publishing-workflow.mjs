@@ -38,9 +38,10 @@ const columns = EXPECTED_COLUMN_TITLES.map((title, index) => ({
 const columnIdByTitle = new Map(columns.map(column => [column.title, column.id]));
 
 function cell(title, value) {
-  const cellValue = typeof value === "object" && value !== null && !Array.isArray(value)
-    ? value
-    : { value, displayValue: value };
+  const cellValue =
+    typeof value === "object" && value !== null && !Array.isArray(value)
+      ? value
+      : { value, displayValue: value };
 
   return {
     columnId: columnIdByTitle.get(title),
@@ -65,7 +66,7 @@ function projectRow(overrides = {}) {
     "Project stage": overrides.stage || "Work in progress",
     "Healthcare setting": "Synthetic setting",
     "Most valuable toolkit elements": "Synthetic toolkit elements",
-    "Prevention": true,
+    Prevention: true,
     "Prevention - Comments": "Synthetic prevention opportunity"
   };
 
@@ -123,10 +124,28 @@ async function tempImages(filenames = []) {
   await mkdir(directory, { recursive: true });
 
   for (const filename of filenames) {
-    await writeFile(join(directory, filename), "synthetic image");
+    await writeFile(join(directory, filename), "synthetic image bytes");
   }
 
   return directory;
+}
+
+function attachmentClientForRecordIds(recordIds, bytes = Buffer.from("synthetic image bytes")) {
+  return attachmentClientFor(
+    new Map(
+      recordIds.map((recordId, index) => [
+        recordId,
+        [
+          {
+            id: index + 1,
+            name: `${recordId.toLowerCase()}-source.jpg`,
+            sizeInBytes: bytes.length
+          }
+        ]
+      ])
+    ),
+    bytes
+  );
 }
 
 function attachmentClientFor(attachmentsByRecordId, bytes = Buffer.from("synthetic image bytes")) {
@@ -181,7 +200,8 @@ function test(name, fn) {
 }
 
 async function buildUnpublishScenario() {
-  const imagesDirectory = await tempImages(["published-a.jpg", "published-b.jpg"]);
+  const imagesDirectory = await tempImages(["seqi-0050.jpg", "seqi-0051.jpg"]);
+  const attachmentClient = attachmentClientForRecordIds(["SEQI-0050", "SEQI-0051"]);
   const originalSheet = sheet([
     projectRow({
       recordId: "SEQI-0050",
@@ -204,7 +224,7 @@ async function buildUnpublishScenario() {
     sheet: originalSheet,
     imagesDirectory,
     tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
-    attachmentClient: forbiddenAttachmentClient()
+    attachmentClient
   });
   const unpublishedRow = projectRow({
     recordId: "SEQI-0050",
@@ -221,7 +241,7 @@ async function buildUnpublishScenario() {
       recordId: "SEQI-0051",
       rowId: 51,
       status: PUBLISHED_STATUS,
-      photoFilename: "published-b.jpg",
+      photoFilename: "seqi-0051.jpg",
       publicationDate: "2026-06-11",
       title: "Published B"
     })
@@ -231,7 +251,7 @@ async function buildUnpublishScenario() {
     currentRecords: originalPlan.records,
     imagesDirectory,
     tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
-    attachmentClient: forbiddenAttachmentClient()
+    attachmentClient
   });
 
   return {
@@ -245,7 +265,9 @@ async function buildUnpublishScenario() {
 
 test("Phase 2B mapping validates ID, type, title, description, stage, organization, and photo", async () => {
   const imagesDirectory = await tempImages(["existing.jpg"]);
-  const result = generatePreviewRecords(sheet([projectRow()]), { imagesDirectory });
+  const result = generatePreviewRecords(sheet([projectRow()]), {
+    imagesDirectory
+  });
   assert.equal(result.records.length, 1);
   assert.equal(result.records[0].id, "SEQI-0001");
   assert.equal(result.records[0].type, "project");
@@ -272,7 +294,8 @@ test("Phase 2B maps all five sustainability fields to current public labels", as
           "Stewardship / Appropriateness": true,
           "Stewardship Comments": "Synthetic stewardship opportunity",
           "Mitigation / Decarbonization": true,
-          "Mitigation / Decarbonization - comments": "Category note: Synthetic mitigation opportunity",
+          "Mitigation / Decarbonization - comments":
+            "Category note: Synthetic mitigation opportunity",
           "Climate resilience and adaptation": true,
           "Climate resilience and adaptation - Comments": "",
           "Clinical specialty or treatment modality": true,
@@ -320,34 +343,41 @@ test("Phase 2B default preview includes Ready to publish only", async () => {
     ]),
     { imagesDirectory }
   );
-  assert.deepEqual(result.records.map(record => record.id), ["SEQI-0001"]);
+  assert.deepEqual(
+    result.records.map(record => record.id),
+    ["SEQI-0001"]
+  );
 });
 
-test("Phase 2B blank publication-date fallback uses America/Vancouver", async () => {
+test("Phase 2B blank publication date is not auto-filled", async () => {
   const imagesDirectory = await tempImages(["existing.jpg"]);
-  const result = generatePreviewRecords(
-    sheet([projectRow({ publicationDate: "" })]),
-    {
-      imagesDirectory,
-      fallbackDate: new Date("2026-07-15T06:30:00Z")
-    }
+  assert.throws(
+    () =>
+      generatePreviewRecords(sheet([projectRow({ publicationDate: "" })]), {
+        imagesDirectory,
+        fallbackDate: new Date("2026-07-15T06:30:00Z")
+      }),
+    error =>
+      error instanceof ValidationError &&
+      JSON.stringify(error.errors).includes("Website publication date is missing")
   );
-  assert.equal(result.records[0].publishedOn, "14 July 2026");
 });
 
 test("Phase 2B image validation accepts existing case-sensitive filename", async () => {
   const imagesDirectory = await tempImages(["case.jpg"]);
-  const result = generatePreviewRecords(
-    sheet([projectRow({ photoFilename: "case.jpg" })]),
-    { imagesDirectory }
-  );
+  const result = generatePreviewRecords(sheet([projectRow({ photoFilename: "case.jpg" })]), {
+    imagesDirectory
+  });
   assert.equal(result.records[0].photo, "images/case.jpg");
 });
 
 test("Phase 2B image validation fails missing filename", async () => {
   const imagesDirectory = await tempImages([]);
   assert.throws(
-    () => generatePreviewRecords(sheet([projectRow({ photoFilename: "missing.jpg" })]), { imagesDirectory }),
+    () =>
+      generatePreviewRecords(sheet([projectRow({ photoFilename: "missing.jpg" })]), {
+        imagesDirectory
+      }),
     ValidationError
   );
 });
@@ -355,18 +385,24 @@ test("Phase 2B image validation fails missing filename", async () => {
 test("Phase 2B image validation is case-sensitive", async () => {
   const imagesDirectory = await tempImages(["case.jpg"]);
   assert.throws(
-    () => generatePreviewRecords(sheet([projectRow({ photoFilename: "Case.JPG" })]), { imagesDirectory }),
+    () =>
+      generatePreviewRecords(sheet([projectRow({ photoFilename: "Case.JPG" })]), {
+        imagesDirectory
+      }),
     ValidationError
   );
 });
 
-test("Preview uses an existing Website photo filename without attachment lookup", async () => {
-  const imagesDirectory = await tempImages(["existing.jpg"]);
-  const result = await generatePreviewWithAttachments(sheet([projectRow()]), {
-    imagesDirectory,
-    attachmentClient: forbiddenAttachmentClient()
-  });
-  assert.equal(result.records[0].photo, "images/existing.jpg");
+test("Preview uses a canonical row-attachment filename even when Smartsheet has a legacy filename", async () => {
+  const imagesDirectory = await tempImages(["seqi-0001.jpg"]);
+  const result = await generatePreviewWithAttachments(
+    sheet([projectRow({ photoFilename: "existing.jpg" })]),
+    {
+      imagesDirectory,
+      attachmentClient: attachmentClientForRecordIds(["SEQI-0001"])
+    }
+  );
+  assert.equal(result.records[0].photo, "images/seqi-0001.jpg");
   assert.equal(result.downloadedImages.length, 0);
 });
 
@@ -395,7 +431,10 @@ test("Preview resolves and downloads an image attachment when photo filename is 
   });
 
   assert.equal(result.records[0].photo, "images/seqi-0017.jpg");
-  assert.deepEqual(result.downloadedImages.map(image => image.filename), ["seqi-0017.jpg"]);
+  assert.deepEqual(
+    result.downloadedImages.map(image => image.filename),
+    ["seqi-0017.jpg"]
+  );
   assert.equal(
     await readFile(join(imagesDirectory, "seqi-0017.jpg"), "utf8"),
     "synthetic image bytes"
@@ -437,30 +476,53 @@ test("Preview fails when neither a photo filename nor valid image attachment exi
 });
 
 test("Phase 3 includes Ready and Published, excludes other statuses", async () => {
-  const imagesDirectory = await tempImages(["ready.jpg", "published.jpg", "draft.jpg"]);
+  const imagesDirectory = await tempImages(["seqi-0001.jpg", "seqi-0002.jpg", "draft.jpg"]);
   const plan = await buildPublishPlan({
     sheet: sheet([
-      projectRow({ recordId: "SEQI-0001", status: READY_TO_PUBLISH_STATUS, photoFilename: "ready.jpg" }),
-      projectRow({ recordId: "SEQI-0002", status: PUBLISHED_STATUS, photoFilename: "published.jpg" }),
-      projectRow({ recordId: "SEQI-0003", status: "Draft", photoFilename: "draft.jpg" })
+      projectRow({
+        recordId: "SEQI-0001",
+        status: READY_TO_PUBLISH_STATUS,
+        photoFilename: "ready.jpg"
+      }),
+      projectRow({
+        recordId: "SEQI-0002",
+        status: PUBLISHED_STATUS,
+        photoFilename: "published.jpg"
+      }),
+      projectRow({
+        recordId: "SEQI-0003",
+        status: "Draft",
+        photoFilename: "draft.jpg"
+      })
     ]),
     imagesDirectory,
     tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
-    attachmentClient: forbiddenAttachmentClient()
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0001", "SEQI-0002"])
   });
-  assert.deepEqual(plan.records.map(record => record.id), ["SEQI-0001", "SEQI-0002"]);
+  assert.deepEqual(
+    plan.records.map(record => record.id),
+    ["SEQI-0001", "SEQI-0002"]
+  );
+  assert.deepEqual(
+    plan.records.map(record => record.photo),
+    ["images/seqi-0001.jpg", "images/seqi-0002.jpg"]
+  );
 });
 
 test("Published to Do not publish removes exactly one record and preserves other Published records", async () => {
   const { originalPlan, unpublishPlan } = await buildUnpublishScenario();
   assert.equal(originalPlan.records.length, 2);
-  assert.deepEqual(unpublishPlan.records.map(record => record.id), ["SEQI-0051"]);
+  assert.deepEqual(
+    unpublishPlan.records.map(record => record.id),
+    ["SEQI-0051"]
+  );
   assert.equal(unpublishPlan.summary.publishedCount, 1);
   assert.equal(unpublishPlan.summary.doNotPublishCount, 1);
   assert.deepEqual(detectPublicationWork(originalPlan.serialized, unpublishPlan), {
     shouldPublish: true,
     galleryChanged: true,
-    hasReadyRows: false
+    hasReadyRows: false,
+    hasWriteBackRows: false
   });
 });
 
@@ -471,20 +533,22 @@ test("Unpublish generation creates no duplicate public records", async () => {
 });
 
 test("Unpublish preserves Smartsheet ID, date, photo filename, status, and repository image", async () => {
-  const {
-    imagesDirectory,
-    unpublishedRow,
-    sourceRowSnapshot,
-    unpublishPlan
-  } = await buildUnpublishScenario();
+  const { imagesDirectory, unpublishedRow, sourceRowSnapshot, unpublishPlan } =
+    await buildUnpublishScenario();
 
   assert.deepEqual(unpublishedRow, sourceRowSnapshot);
   assert.equal(rowValue(unpublishedRow, COMMON_COLUMN_TITLES.recordId), "SEQI-0050");
   assert.equal(rowValue(unpublishedRow, COMMON_COLUMN_TITLES.publicationDate), "2026-06-10");
   assert.equal(rowValue(unpublishedRow, COMMON_COLUMN_TITLES.photoFilename), "published-a.jpg");
-  assert.equal(rowValue(unpublishedRow, COMMON_COLUMN_TITLES.publicationStatus), DO_NOT_PUBLISH_STATUS);
+  assert.equal(
+    rowValue(unpublishedRow, COMMON_COLUMN_TITLES.publicationStatus),
+    DO_NOT_PUBLISH_STATUS
+  );
   assert.equal(unpublishPlan.writeBackRows.length, 0);
-  assert.equal(await readFile(join(imagesDirectory, "published-a.jpg"), "utf8"), "synthetic image");
+  assert.equal(
+    await readFile(join(imagesDirectory, "seqi-0050.jpg"), "utf8"),
+    "synthetic image bytes"
+  );
 });
 
 test("Do not publish to Ready republishes the same record ID without duplication", async () => {
@@ -511,25 +575,29 @@ test("Do not publish to Ready republishes the same record ID without duplication
     currentRecords: unpublishPlan.records,
     imagesDirectory,
     tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
-    attachmentClient: forbiddenAttachmentClient()
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0050", "SEQI-0051"])
   });
 
-  assert.deepEqual(republishPlan.records.map(record => record.id), ["SEQI-0050", "SEQI-0051"]);
+  assert.deepEqual(
+    republishPlan.records.map(record => record.id),
+    ["SEQI-0050", "SEQI-0051"]
+  );
   assert.equal(new Set(republishPlan.records.map(record => record.id)).size, 2);
-  assert.equal(republishPlan.records[0].photo, "images/published-a.jpg");
+  assert.equal(republishPlan.records[0].photo, "images/seqi-0050.jpg");
   assert.equal(republishPlan.records[0].publishedOn, "10 June 2026");
   assert.equal(republishPlan.writeBackRows[0].recordId, "SEQI-0050");
   assert.equal(republishPlan.writeBackRows[0].recordIdWasBlank, false);
+  assert.equal(republishPlan.writeBackRows[0].markPublished, true);
 });
 
 test("Unchanged Published records produce no publication work", async () => {
-  const imagesDirectory = await tempImages(["unchanged.jpg"]);
+  const imagesDirectory = await tempImages(["seqi-0052.jpg"]);
   const sourceSheet = sheet([
     projectRow({
       recordId: "SEQI-0052",
       rowId: 52,
       status: PUBLISHED_STATUS,
-      photoFilename: "unchanged.jpg",
+      photoFilename: "seqi-0052.jpg",
       publicationDate: "2026-06-12"
     })
   ]);
@@ -537,30 +605,31 @@ test("Unchanged Published records produce no publication work", async () => {
     sheet: sourceSheet,
     imagesDirectory,
     tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
-    attachmentClient: forbiddenAttachmentClient()
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0052"])
   });
   const repeatedPlan = await buildPublishPlan({
     sheet: sourceSheet,
     currentRecords: initialPlan.records,
     imagesDirectory,
     tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
-    attachmentClient: forbiddenAttachmentClient()
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0052"])
   });
 
   assert.deepEqual(detectPublicationWork(initialPlan.serialized, repeatedPlan), {
     shouldPublish: false,
     galleryChanged: false,
-    hasReadyRows: false
+    hasReadyRows: false,
+    hasWriteBackRows: false
   });
 });
 
 test("A website-impacting Published field change triggers publication without Ready rows", async () => {
-  const imagesDirectory = await tempImages(["changed.jpg"]);
+  const imagesDirectory = await tempImages(["seqi-0053.jpg"]);
   const originalSheet = sheet([
     projectRow({
       recordId: "SEQI-0053",
       status: PUBLISHED_STATUS,
-      photoFilename: "changed.jpg",
+      photoFilename: "seqi-0053.jpg",
       title: "Original title"
     })
   ]);
@@ -568,21 +637,21 @@ test("A website-impacting Published field change triggers publication without Re
     sheet: originalSheet,
     imagesDirectory,
     tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
-    attachmentClient: forbiddenAttachmentClient()
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0053"])
   });
   const changedPlan = await buildPublishPlan({
     sheet: sheet([
       projectRow({
         recordId: "SEQI-0053",
         status: PUBLISHED_STATUS,
-        photoFilename: "changed.jpg",
+        photoFilename: "seqi-0053.jpg",
         title: "Updated title"
       })
     ]),
     currentRecords: originalPlan.records,
     imagesDirectory,
     tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
-    attachmentClient: forbiddenAttachmentClient()
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0053"])
   });
 
   assert.equal(changedPlan.writeBackRows.length, 0);
@@ -638,19 +707,26 @@ test("Phase 3 generates missing Ready IDs after the highest reserved sequence", 
 });
 
 test("Phase 3 writes generated IDs into the publication plan", async () => {
-  const imagesDirectory = await tempImages(["existing.jpg"]);
+  const imagesDirectory = await tempImages(["seqi-0014.jpg"]);
   const plan = await buildPublishPlan({
     sheet: sheet([
-      projectRow({ recordId: "SEQI-0014", status: PUBLISHED_STATUS, rowId: 14 }),
+      projectRow({
+        recordId: "SEQI-0014",
+        status: PUBLISHED_STATUS,
+        rowId: 14
+      }),
       projectRow({ recordId: "", status: READY_TO_PUBLISH_STATUS, rowId: 15 })
     ]),
     imagesDirectory,
     tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
-    attachmentClient: forbiddenAttachmentClient()
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0014", "SEQI-0015"])
   });
-  assert.deepEqual(plan.records.map(record => record.id), ["SEQI-0014", "SEQI-0015"]);
-  assert.equal(plan.writeBackRows[0].recordId, "SEQI-0015");
-  assert.equal(plan.writeBackRows[0].recordIdWasBlank, true);
+  assert.deepEqual(
+    plan.records.map(record => record.id),
+    ["SEQI-0014", "SEQI-0015"]
+  );
+  const generatedIdWriteBack = plan.writeBackRows.find(row => row.recordId === "SEQI-0015");
+  assert.equal(generatedIdWriteBack.recordIdWasBlank, true);
 });
 
 test("Phase 3 rejects duplicate IDs anywhere in the source sheet", () => {
@@ -658,7 +734,11 @@ test("Phase 3 rejects duplicate IDs anywhere in the source sheet", () => {
     () =>
       assignMissingReadyRecordIds(
         sheet([
-          projectRow({ recordId: "SEQI-0020", status: PUBLISHED_STATUS, rowId: 20 }),
+          projectRow({
+            recordId: "SEQI-0020",
+            status: PUBLISHED_STATUS,
+            rowId: 20
+          }),
           projectRow({ recordId: "SEQI-0020", status: "Draft", rowId: 21 })
         ])
       ),
@@ -697,7 +777,7 @@ test("Phase 3 rejects null and non-finite generated values", () => {
 });
 
 test("Phase 3 keeps optional blank fields render-safe", async () => {
-  const imagesDirectory = await tempImages(["existing.jpg"]);
+  const imagesDirectory = await tempImages(["seqi-0023.jpg"]);
   const plan = await buildPublishPlan({
     sheet: sheet([
       projectRow({
@@ -713,7 +793,7 @@ test("Phase 3 keeps optional blank fields render-safe", async () => {
     ]),
     imagesDirectory,
     tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
-    attachmentClient: forbiddenAttachmentClient()
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0023"])
   });
   assert.equal(plan.records[0].email, "");
   assert.equal(plan.records[0].healthcareSetting, "");
@@ -721,16 +801,18 @@ test("Phase 3 keeps optional blank fields render-safe", async () => {
   assert.doesNotMatch(plan.serialized, /\b(?:undefined|NaN)\b/);
 });
 
-test("Phase 3 reuses an existing image without attachment lookup", async () => {
-  const imagesDirectory = await tempImages(["existing.jpg"]);
+test("Phase 3 reuses an existing canonical image after checking its row attachment", async () => {
+  const imagesDirectory = await tempImages(["seqi-0001.jpg"]);
   const plan = await buildPublishPlan({
     sheet: sheet([projectRow({ photoFilename: "existing.jpg" })]),
     imagesDirectory,
     tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
-    attachmentClient: forbiddenAttachmentClient()
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0001"])
   });
   assert.equal(plan.summary.reusedImageCount, 1);
   assert.equal(plan.downloadedImages.length, 0);
+  assert.equal(plan.records[0].photo, "images/seqi-0001.jpg");
+  assert.equal(plan.writeBackRows[0].finalPhotoFilename, "seqi-0001.jpg");
 });
 
 for (const [name, attachmentName, expectedFilename] of [
@@ -858,10 +940,17 @@ test("Phase 3 fails duplicate Website record ID", async () => {
   );
 });
 
-test("Phase 3 preserves existing publication date when Smartsheet date is blank", async () => {
+test("Phase 3 preserves an existing Published date when Smartsheet date is blank", async () => {
   const imagesDirectory = await tempImages(["seqi-0031.jpg"]);
   const plan = await buildPublishPlan({
-    sheet: sheet([projectRow({ recordId: "SEQI-0031", photoFilename: "", publicationDate: "" })]),
+    sheet: sheet([
+      projectRow({
+        recordId: "SEQI-0031",
+        status: PUBLISHED_STATUS,
+        photoFilename: "seqi-0031.jpg",
+        publicationDate: ""
+      })
+    ]),
     currentRecords: [
       {
         id: "SEQI-0031",
@@ -871,23 +960,61 @@ test("Phase 3 preserves existing publication date when Smartsheet date is blank"
     ],
     imagesDirectory,
     tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
-    attachmentClient: forbiddenAttachmentClient()
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0031"])
   });
   assert.equal(plan.records[0].publishedOn, "19 June 2026");
-  assert.equal(plan.writeBackRows[0].finalPublicationIsoDate, "2026-06-19");
+  assert.equal(plan.writeBackRows.length, 0);
 });
 
-test("Phase 3 uses Vancouver date for a new blank-date record", async () => {
-  const imagesDirectory = await tempImages(["existing.jpg"]);
+test("Phase 3 skips a new Ready row with a blank publication date", async () => {
+  const imagesDirectory = await tempImages([]);
   const plan = await buildPublishPlan({
     sheet: sheet([projectRow({ recordId: "SEQI-0032", publicationDate: "" })]),
     imagesDirectory,
-    fallbackDate: new Date("2026-07-15T06:30:00Z"),
     tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
-    attachmentClient: forbiddenAttachmentClient()
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0032"])
   });
-  assert.equal(plan.records[0].publishedOn, "14 July 2026");
-  assert.equal(plan.writeBackRows[0].finalPublicationIsoDate, "2026-07-14");
+  assert.deepEqual(plan.records, []);
+  assert.equal(plan.writeBackRows.length, 0);
+  assert.equal(plan.summary.readyToPublishCount, 0);
+  assert.equal(plan.summary.skippedMissingPublicationDateCount, 1);
+  assert.equal(plan.summary.skippedMissingPublicationDateRows[0].recordId, "SEQI-0032");
+});
+
+test("Phase 3 skips a Ready row with a blank date without removing its live record", async () => {
+  const imagesDirectory = await tempImages(["seqi-0033.jpg"]);
+  const currentRecord = {
+    id: "SEQI-0033",
+    type: "project",
+    title: "Published before",
+    photo: "images/seqi-0033.jpg",
+    photoAlt: "Published before",
+    province: "British Columbia",
+    publishedOn: "10 July 2026",
+    contactName: "Synthetic Respondent",
+    email: "synthetic@example.test",
+    organization: "Synthetic Organization",
+    department: "Synthetic Department",
+    stage: "Complete",
+    healthcareSetting: "Synthetic setting",
+    description: "Existing public record",
+    cobenefit: "",
+    sustainabilityPrinciples: [],
+    sustainabilityOpportunities: [],
+    metrics: { environmental: [], activity: [] },
+    domainsOfQuality: []
+  };
+  const plan = await buildPublishPlan({
+    sheet: sheet([projectRow({ recordId: "SEQI-0033", publicationDate: "" })]),
+    currentRecords: [currentRecord],
+    imagesDirectory,
+    tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0033"])
+  });
+
+  assert.deepEqual(plan.records, [currentRecord]);
+  assert.equal(plan.writeBackRows.length, 0);
+  assert.equal(plan.summary.skippedMissingPublicationDateCount, 1);
 });
 
 test("Phase 3 rejects the wrong production repository", () => {
@@ -911,48 +1038,64 @@ test("Phase 3 accepts the production repository main branch", () => {
 });
 
 test("Phase 3 detects no-change publishing", async () => {
-  const imagesDirectory = await tempImages(["existing.jpg"]);
+  const imagesDirectory = await tempImages(["seqi-0001.jpg"]);
   const plan = await buildPublishPlan({
-    sheet: sheet([projectRow()]),
+    sheet: sheet([projectRow({ photoFilename: "seqi-0001.jpg" })]),
     imagesDirectory,
     tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
-    attachmentClient: forbiddenAttachmentClient()
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0001"])
   });
   assert.equal(detectNoChange(plan.serialized, plan), true);
   assert.deepEqual(detectPublicationWork(plan.serialized, plan), {
     shouldPublish: true,
     galleryChanged: false,
-    hasReadyRows: true
+    hasReadyRows: true,
+    hasWriteBackRows: true
   });
 });
 
 test("Phase 3 builds successful Smartsheet write-back payload", () => {
-  const payload = buildSmartsheetWriteBackPayload(
-    [
-      {
-        recordId: "SEQI-0040",
-        rowId: 10,
-        recordIdColumnId: 15,
-        statusColumnId: 20,
-        publicationDateColumnId: 30,
-        photoFilenameColumnId: 40,
-        finalPhotoFilename: "seqi-0040.jpg",
-        finalPublicationIsoDate: "2026-07-14",
-        publicationDateWasBlank: true,
-        recordIdWasBlank: true
-      }
-    ],
-    { successfulPublicationIsoDate: "2026-07-15" }
-  );
+  const payload = buildSmartsheetWriteBackPayload([
+    {
+      recordId: "SEQI-0040",
+      rowId: 10,
+      recordIdColumnId: 15,
+      statusColumnId: 20,
+      photoFilenameColumnId: 40,
+      markPublished: true,
+      finalPhotoFilename: "seqi-0040.jpg",
+      recordIdWasBlank: true
+    }
+  ]);
   assert.deepEqual(payload, [
     {
       id: 10,
       cells: [
         { columnId: 20, value: PUBLISHED_STATUS, strict: false },
         { columnId: 40, value: "seqi-0040.jpg", strict: false },
-        { columnId: 15, value: "SEQI-0040", strict: false },
-        { columnId: 30, value: "2026-07-15" }
+        { columnId: 15, value: "SEQI-0040", strict: false }
       ]
+    }
+  ]);
+});
+
+test("Phase 3 builds photo-only Smartsheet write-back payload", () => {
+  const payload = buildSmartsheetWriteBackPayload([
+    {
+      recordId: "SEQI-0001",
+      rowId: 1,
+      recordIdColumnId: 15,
+      statusColumnId: 20,
+      photoFilenameColumnId: 40,
+      markPublished: false,
+      finalPhotoFilename: "seqi-0001.jpg",
+      recordIdWasBlank: false
+    }
+  ]);
+  assert.deepEqual(payload, [
+    {
+      id: 1,
+      cells: [{ columnId: 40, value: "seqi-0001.jpg", strict: false }]
     }
   ]);
 });
@@ -980,16 +1123,17 @@ test("Phase 3 sends successful Smartsheet write-back request", async () => {
         recordId: "SEQI-0040",
         rowId: 10,
         statusColumnId: 20,
-        publicationDateColumnId: 30,
         photoFilenameColumnId: 40,
-        finalPhotoFilename: "seqi-0040.jpg",
-        finalPublicationIsoDate: "2026-07-14",
-        publicationDateWasBlank: true
+        markPublished: true,
+        finalPhotoFilename: "seqi-0040.jpg"
       }
     ]);
     assert.equal(result.updatedCount, 1);
     assert.equal(captured[0].id, 10);
-    assert.equal(captured[0].cells.length, 3);
+    assert.deepEqual(captured[0].cells, [
+      { columnId: 20, value: PUBLISHED_STATUS, strict: false },
+      { columnId: 40, value: "seqi-0040.jpg", strict: false }
+    ]);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -1016,11 +1160,9 @@ test("Phase 3 reports partial Smartsheet write-back failure", async () => {
             recordId: "SEQI-0041",
             rowId: 1,
             statusColumnId: 2,
-            publicationDateColumnId: 3,
             photoFilenameColumnId: 4,
-            finalPhotoFilename: "seqi-0041.jpg",
-            finalPublicationIsoDate: "2026-07-14",
-            publicationDateWasBlank: true
+            markPublished: true,
+            finalPhotoFilename: "seqi-0041.jpg"
           }
         ]),
       "write-back did not fully succeed"
@@ -1033,7 +1175,13 @@ test("Phase 3 reports partial Smartsheet write-back failure", async () => {
 test("Phase 3 safe rerun reuses committed image after Smartsheet write-back failure", async () => {
   const imagesDirectory = await tempImages(["seqi-0042.jpg"]);
   const plan = await buildPublishPlan({
-    sheet: sheet([projectRow({ recordId: "SEQI-0042", photoFilename: "", publicationDate: "" })]),
+    sheet: sheet([
+      projectRow({
+        recordId: "SEQI-0042",
+        photoFilename: "",
+        publicationDate: "2026-07-14"
+      })
+    ]),
     currentRecords: [
       {
         id: "SEQI-0042",
@@ -1043,7 +1191,7 @@ test("Phase 3 safe rerun reuses committed image after Smartsheet write-back fail
     ],
     imagesDirectory,
     tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
-    attachmentClient: forbiddenAttachmentClient()
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0042"])
   });
   assert.equal(plan.downloadedImages.length, 0);
   assert.equal(plan.records[0].photo, "images/seqi-0042.jpg");
@@ -1051,12 +1199,12 @@ test("Phase 3 safe rerun reuses committed image after Smartsheet write-back fail
 });
 
 test("Phase 3 supports initiatives in the publish output", async () => {
-  const imagesDirectory = await tempImages(["initiative.jpg"]);
+  const imagesDirectory = await tempImages(["seqi-0100.jpg"]);
   const plan = await buildPublishPlan({
     sheet: sheet([initiativeRow()]),
     imagesDirectory,
     tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
-    attachmentClient: forbiddenAttachmentClient()
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0100"])
   });
   assert.equal(plan.records[0].type, "initiative");
   assert.equal(plan.summary.initiativeCount, 1);

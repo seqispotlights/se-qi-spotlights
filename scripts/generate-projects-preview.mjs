@@ -1,5 +1,5 @@
 import { readdirSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, extname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 
@@ -20,10 +20,7 @@ export const APPROVED_SUSTAINABILITY_CATEGORIES = Object.freeze([
 ]);
 const WEBSITE_LABEL_OVERRIDES = new Map([
   ["Climate resilience and adaptation", "Adaptation and Resilience"],
-  [
-    "Clinical specialty or treatment modality",
-    "Clinical Specialties or Treatment Modality"
-  ]
+  ["Clinical specialty or treatment modality", "Clinical Specialties or Treatment Modality"]
 ]);
 const SUPPORTED_PREVIEW_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 const PREVIEW_JPEG_EXTENSIONS = new Set([".jpg", ".jpeg"]);
@@ -139,10 +136,7 @@ const OPPORTUNITY_PAIRS = [
   ["Stewardship / Appropriateness", "Stewardship Comments"],
   ["Mitigation / Decarbonization", "Mitigation / Decarbonization - comments"],
   ["Climate resilience and adaptation", "Climate resilience and adaptation - Comments"],
-  [
-    "Clinical specialty or treatment modality",
-    "Clinical specialty or treatment modality - Comment"
-  ]
+  ["Clinical specialty or treatment modality", "Clinical specialty or treatment modality - Comment"]
 ];
 
 const DOMAIN_PAIRS = [
@@ -314,7 +308,9 @@ function getMultiSelectValues(row, column) {
 }
 
 function stripBulletPrefix(value) {
-  return trimText(value).replace(/^(\s*[-*•‣◦▪●]|\s*\d+[\.)])\s+/, "").trim();
+  return trimText(value)
+    .replace(/^(\s*[-*•‣◦▪●]|\s*\d+[\.)])\s+/, "")
+    .trim();
 }
 
 function splitListField(value) {
@@ -322,10 +318,7 @@ function splitListField(value) {
   if (!text) return [];
 
   if (/\r?\n/.test(text)) {
-    return text
-      .split(/\r?\n/)
-      .map(stripBulletPrefix)
-      .filter(Boolean);
+    return text.split(/\r?\n/).map(stripBulletPrefix).filter(Boolean);
   }
 
   return [stripBulletPrefix(text)].filter(Boolean);
@@ -333,8 +326,11 @@ function splitListField(value) {
 
 export function formatDateForWebsite(value, fallbackDate = new Date()) {
   const text = trimText(value);
-  const hasPublicationDate = text !== "";
-  const source = hasPublicationDate ? text : fallbackDate;
+  if (!text) {
+    throw new Error("Website publication date is missing.");
+  }
+
+  const source = text;
   let date;
 
   if (source instanceof Date) {
@@ -353,7 +349,7 @@ export function formatDateForWebsite(value, fallbackDate = new Date()) {
     day: "numeric",
     month: "long",
     year: "numeric",
-    timeZone: hasPublicationDate ? "UTC" : "America/Vancouver"
+    timeZone: "UTC"
   }).format(date);
 }
 
@@ -447,7 +443,9 @@ function mapProjectRow(row, columnLookup, fallbackDate, options = {}) {
       environmental: splitListField(
         getCellText(row, columnLookup.get(PROJECT_COLUMN_TITLES.environmentalData))
       ),
-      activity: splitListField(getCellText(row, columnLookup.get(PROJECT_COLUMN_TITLES.activityData)))
+      activity: splitListField(
+        getCellText(row, columnLookup.get(PROJECT_COLUMN_TITLES.activityData))
+      )
     },
     domainsOfQuality: buildDetailPairs(row, columnLookup, DOMAIN_PAIRS)
   };
@@ -472,7 +470,10 @@ function mapInitiativeRow(row, columnLookup, fallbackDate, options = {}) {
     domainsOfQuality: [],
     cobenefit: "",
     initiativeStage: stage,
-    toolkitApplication: getCellText(row, columnLookup.get(INITIATIVE_COLUMN_TITLES.toolkitApplication)),
+    toolkitApplication: getCellText(
+      row,
+      columnLookup.get(INITIATIVE_COLUMN_TITLES.toolkitApplication)
+    ),
     toolkitAudienceUptake: getCellText(
       row,
       columnLookup.get(INITIATIVE_COLUMN_TITLES.toolkitAudienceUptake)
@@ -534,9 +535,11 @@ function validateTypeRequiredFields(row, columnLookup, recordType, errors) {
 }
 
 export function buildCaseSensitiveImageFilenameSet(imagesDirectory = DEFAULT_IMAGES_DIRECTORY) {
-  return new Set(readdirSync(imagesDirectory, { withFileTypes: true })
-    .filter(entry => entry.isFile())
-    .map(entry => entry.name));
+  return new Set(
+    readdirSync(imagesDirectory, { withFileTypes: true })
+      .filter(entry => entry.isFile())
+      .map(entry => entry.name)
+  );
 }
 
 function getSupportedPreviewImageExtension(attachment) {
@@ -630,8 +633,9 @@ function previewValidationErrors(error, recordId) {
 export async function generatePreviewWithAttachments(sheet, options = {}) {
   const rows = Array.isArray(sheet.rows) ? sheet.rows : [];
   const columnLookup = buildColumnLookup(sheet.columns || []);
-  const eligiblePublicationStatuses =
-    options.eligiblePublicationStatuses || [READY_TO_PUBLISH_STATUS];
+  const eligiblePublicationStatuses = options.eligiblePublicationStatuses || [
+    READY_TO_PUBLISH_STATUS
+  ];
   const approvedRows = rows.filter(row =>
     eligiblePublicationStatuses.includes(
       getCellText(row, columnLookup.get(COMMON_COLUMN_TITLES.publicationStatus))
@@ -647,40 +651,34 @@ export async function generatePreviewWithAttachments(sheet, options = {}) {
 
   for (const row of approvedRows) {
     const recordId = rowIdentifier(row, columnLookup);
-    const sourceFilename = getCellText(
-      row,
-      columnLookup.get(COMMON_COLUMN_TITLES.photoFilename)
-    );
-
-    if (sourceFilename) {
-      photoFilenameByRecordId.set(recordId, sourceFilename);
-      continue;
-    }
 
     try {
       if (!options.attachmentClient) {
-        throw new Error("Preview attachment client is required when Website photo filename is blank");
+        throw new Error("Preview attachment client is required");
       }
 
       const attachments = await options.attachmentClient.listRowAttachments(row, recordId);
       const selectedAttachment = selectSinglePreviewImageAttachment(recordId, attachments);
       const filename = generatedPreviewImageFilename(recordId, selectedAttachment);
+      const metadata = await options.attachmentClient.getAttachmentMetadata(
+        selectedAttachment,
+        recordId
+      );
+      const bytes = await options.attachmentClient.downloadAttachment(metadata, recordId);
+      if (bytes.length > MAX_PREVIEW_IMAGE_BYTES) {
+        throw new ValidationError([
+          {
+            recordId,
+            issue: "Downloaded image exceeds 10 MB"
+          }
+        ]);
+      }
 
-      if (!availableImageFilenames.has(filename)) {
-        const metadata = await options.attachmentClient.getAttachmentMetadata(
-          selectedAttachment,
-          recordId
-        );
-        const bytes = await options.attachmentClient.downloadAttachment(metadata, recordId);
-        if (bytes.length > MAX_PREVIEW_IMAGE_BYTES) {
-          throw new ValidationError([
-            {
-              recordId,
-              issue: "Downloaded image exceeds 10 MB"
-            }
-          ]);
-        }
-
+      const imagePath = join(imagesDirectory, filename);
+      const shouldWriteImage =
+        !availableImageFilenames.has(filename) ||
+        Buffer.compare(await readFile(imagePath), bytes) !== 0;
+      if (shouldWriteImage) {
         await writeFile(join(imagesDirectory, filename), bytes);
         availableImageFilenames.add(filename);
         downloadedImages.push({
@@ -743,8 +741,9 @@ export function generatePreviewRecords(sheet, options = {}) {
   const rows = Array.isArray(sheet.rows) ? sheet.rows : [];
   const columnLookup = buildColumnLookup(sheet.columns || []);
   const fallbackDate = options.fallbackDate || new Date();
-  const eligiblePublicationStatuses =
-    options.eligiblePublicationStatuses || [READY_TO_PUBLISH_STATUS];
+  const eligiblePublicationStatuses = options.eligiblePublicationStatuses || [
+    READY_TO_PUBLISH_STATUS
+  ];
   const availableImageFilenames =
     options.availableImageFilenames || buildCaseSensitiveImageFilenameSet(options.imagesDirectory);
   const errors = [];
@@ -834,16 +833,13 @@ export function generatePreviewRecords(sheet, options = {}) {
 }
 
 async function fetchSheet(sheetId, accessToken) {
-  const response = await fetch(
-    `${SMARTSHEET_API_BASE}/sheets/${encodeURIComponent(sheetId)}`,
-    {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: "application/json"
-      }
+  const response = await fetch(`${SMARTSHEET_API_BASE}/sheets/${encodeURIComponent(sheetId)}`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json"
     }
-  );
+  });
 
   if (!response.ok) {
     throw new Error(
