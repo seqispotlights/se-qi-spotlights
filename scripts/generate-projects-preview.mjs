@@ -555,6 +555,22 @@ function getAttachmentSizeBytes(attachment) {
   return undefined;
 }
 
+function describeAttachment(attachment) {
+  const parts = [
+    trimText(attachment?.name) || "<unnamed>",
+    trimText(attachment?.attachmentType),
+    trimText(attachment?.mimeType)
+  ].filter(Boolean);
+
+  return parts.join(" / ");
+}
+
+function unsupportedAttachmentSummary(attachments) {
+  if (!attachments?.length) return "no attachments found on row";
+
+  return `attachments on row: ${attachments.map(describeAttachment).join("; ")}`;
+}
+
 export function selectSinglePreviewImageAttachment(recordId, attachments) {
   const supported = (attachments || []).filter(attachment =>
     getSupportedPreviewImageExtension(attachment)
@@ -564,7 +580,7 @@ export function selectSinglePreviewImageAttachment(recordId, attachments) {
     throw new ValidationError([
       {
         recordId,
-        issue: "Expected exactly one supported image attachment; found 0"
+        issue: `Expected exactly one supported image attachment; found 0 (${unsupportedAttachmentSummary(attachments)})`
       }
     ]);
   }
@@ -870,11 +886,11 @@ function makePreviewAttachmentClient(sheetId, accessToken) {
   return {
     async listRowAttachments(row) {
       const response = await fetchSmartsheetJson(
-        `/sheets/${encodeURIComponent(sheetId)}/rows/${encodeURIComponent(row.id)}?include=attachments`,
+        `/sheets/${encodeURIComponent(sheetId)}/rows/${encodeURIComponent(row.id)}/attachments?includeAll=true`,
         accessToken,
         "Fetch row attachments"
       );
-      return response.attachments || [];
+      return Array.isArray(response?.data) ? response.data : [];
     },
     async getAttachmentMetadata(attachment) {
       return fetchSmartsheetJson(
