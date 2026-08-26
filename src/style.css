@@ -511,6 +511,14 @@ ul { list-style: none; padding: 0; }
    ========================================= */
 .main-area { min-width: 0; }
 
+.gallery-intro {
+  max-width: 880px;
+  margin: 0 0 28px;
+  color: var(--gray-700);
+  font-size: .98rem;
+  line-height: 1.75;
+}
+
 .gallery-toolbar {
   display: flex;
   align-items: center;
@@ -1089,12 +1097,21 @@ body.sidebar-active { overflow: hidden; }
 }
 
 .site-credit {
-  padding: 20px 24px 28px;
+  padding: 28px 24px 34px;
   background: #e4ead8;
   color: var(--gray-600);
-  font-size: .78rem;
-  line-height: 1.5;
+  font-size: .95rem;
+  line-height: 1.6;
   text-align: center;
+}
+
+.site-credit p {
+  margin: 0 auto;
+  max-width: 920px;
+}
+
+.site-credit p + p {
+  margin-top: 8px;
 }
 
 .btn-download-pdf {
