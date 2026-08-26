@@ -519,6 +519,11 @@ ul { list-style: none; padding: 0; }
   line-height: 1.75;
 }
 
+.gallery-intro strong {
+  color: var(--navy);
+  font-weight: 700;
+}
+
 .gallery-toolbar {
   display: flex;
   align-items: center;
@@ -1100,7 +1105,7 @@ body.sidebar-active { overflow: hidden; }
   padding: 28px 24px 34px;
   background: #e4ead8;
   color: var(--gray-600);
-  font-size: .95rem;
+  font-size: 1rem;
   line-height: 1.6;
   text-align: center;
 }
@@ -1112,6 +1117,27 @@ body.sidebar-active { overflow: hidden; }
 
 .site-credit p + p {
   margin-top: 8px;
+}
+
+.site-credit .site-credit-primary {
+  color: var(--navy);
+  font-family: 'Barlow', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.site-credit a {
+  color: var(--navy);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+
+.site-credit a:hover,
+.site-credit a:focus-visible {
+  color: var(--olive-dark);
 }
 
 .btn-download-pdf {
