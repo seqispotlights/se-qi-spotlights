@@ -1101,6 +1101,33 @@ function quoteColumnTitle(title) {
   return `"${escaped}"${whitespaceNote}`;
 }
 
+function describeColumnShape(column) {
+  const type = trimText(column?.type) || "(unknown type)";
+  const options = Array.isArray(column?.options) ? column.options.map(trimText).filter(Boolean) : [];
+  const optionText = options.length > 0 ? `; options=${options.join(" | ")}` : "";
+  return `type=${type}${optionText}`;
+}
+
+function normalizeColumnTitleForDiagnostics(title) {
+  return trimText(title).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function relatedSustainabilityColumns(columns) {
+  const expected = new Set(EXPECTED_COLUMN_TITLES.map(normalizeColumnTitleForDiagnostics));
+  return columns.filter(column => {
+    const normalized = normalizeColumnTitleForDiagnostics(column.title);
+    return (
+      expected.has(normalized) ||
+      normalized.includes("prevention") ||
+      normalized.includes("stewardship") ||
+      normalized.includes("mitigation") ||
+      normalized.includes("climate resilience") ||
+      normalized.includes("clinical specialty") ||
+      normalized.includes("sustainability principles")
+    );
+  });
+}
+
 function logSmartsheetSchemaDiagnostics(sheet, configuredSheetId) {
   const columns = Array.isArray(sheet?.columns) ? sheet.columns : [];
   const exactTitles = new Set(columns.map(column => String(column.title ?? "")));
@@ -1119,6 +1146,10 @@ function logSmartsheetSchemaDiagnostics(sheet, configuredSheetId) {
   columns.forEach((column, index) => {
     console.log(`  ${String(index + 1).padStart(2, "0")}. ${quoteColumnTitle(column.title)}`);
   });
+  console.log("- Sustainability-related column types/options:");
+  for (const column of relatedSustainabilityColumns(columns)) {
+    console.log(`  - ${quoteColumnTitle(column.title)}: ${describeColumnShape(column)}`);
+  }
   console.log(
     `- Missing expected columns after trimming: ${missingColumns.join(", ") || "(none)"}`
   );
