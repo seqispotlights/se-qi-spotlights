@@ -10,6 +10,21 @@ let INITIATIVES = [];
 let SUSTAINABILITY_TAXONOMY = null;
 let searchQuery = "";
 
+const MONTH_INDEX = new Map([
+    ["january", 0],
+    ["february", 1],
+    ["march", 2],
+    ["april", 3],
+    ["may", 4],
+    ["june", 5],
+    ["july", 6],
+    ["august", 7],
+    ["september", 8],
+    ["october", 9],
+    ["november", 10],
+    ["december", 11]
+]);
+
 let activeFilters = {
     province: new Set(),
     sustainabilityPrinciples: new Set(),
@@ -47,6 +62,41 @@ function setProjectData(projects) {
     });
     REGULAR_PROJECTS = PROJECTS.filter(project => project.type !== "initiative");
     INITIATIVES = PROJECTS.filter(project => project.type === "initiative");
+}
+
+function parsePublishedDate(value) {
+    const match = String(value || "").trim().match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
+    if (!match) return null;
+
+    const month = MONTH_INDEX.get(match[2].toLowerCase());
+    if (month === undefined) return null;
+
+    const day = Number(match[1]);
+    const year = Number(match[3]);
+    const date = new Date(Date.UTC(year, month, day));
+
+    if (
+        date.getUTCFullYear() !== year ||
+        date.getUTCMonth() !== month ||
+        date.getUTCDate() !== day
+    ) {
+        return null;
+    }
+
+    return date;
+}
+
+function updateDashboardTimestamp() {
+    const el = document.getElementById("dashboardUpdated");
+    if (!el) return;
+
+    const latest = PROJECTS.reduce((currentLatest, project) => {
+        const date = parsePublishedDate(project.publishedOn);
+        if (!date || (currentLatest && date <= currentLatest.date)) return currentLatest;
+        return { date, label: String(project.publishedOn).trim() };
+    }, null);
+
+    el.textContent = latest ? "Spotlight data last updated: " + latest.label : "";
 }
 
 function previewModeEnabled() {
@@ -1333,6 +1383,7 @@ async function initializeGallery() {
         buildFilters();
         renderProjects();
         renderInitiatives();
+        updateDashboardTimestamp();
         updateActiveCount();
         bindGalleryEvents();
     } catch (error) {
