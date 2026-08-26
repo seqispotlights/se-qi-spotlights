@@ -32,6 +32,29 @@ export const PROJECTS_OUTPUT_PATH = "data/projects.json";
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 export const WEBSITE_RECORD_ID_PATTERN = /^SEQI-(\d{4,})$/;
 export const DO_NOT_PUBLISH_STATUS = "Do not publish";
+const SUSTAINABILITY_COLUMN_RENAMES = Object.freeze([
+  ["Prevention", "Opportunity - Prevention", "prevention"],
+  [
+    "Stewardship / Appropriateness",
+    "Opportunity - Stewardship / Appropriateness",
+    "stewardshipAppropriateness"
+  ],
+  [
+    "Mitigation / Decarbonization",
+    "Opportunity - Mitigation / Decarbonization",
+    "mitigationDecarbonization"
+  ],
+  [
+    "Climate resilience and adaptation",
+    "Opportunity - Climate resilience and adaptation",
+    "climateResilienceAdaptation"
+  ],
+  [
+    "Clinical specialty / treatment modality",
+    "Opp - Clinical specialty / treatment modality",
+    "clinicalSpecialtyTreatmentModality"
+  ]
+]);
 
 const SUPPORTED_IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"]);
 const JPEG_EXTENSIONS = new Set([".jpg", ".jpeg"]);
@@ -1158,6 +1181,92 @@ function logSmartsheetSchemaDiagnostics(sheet, configuredSheetId) {
   );
 }
 
+function columnTitleLookup(columns) {
+  const lookup = new Map();
+  for (const column of columns || []) {
+    const title = trimText(column.title);
+    if (title) lookup.set(title, column);
+  }
+  return lookup;
+}
+
+function taxonomyCategoryByKey(key) {
+  return SUSTAINABILITY_TAXONOMY.opportunities.find(category => category.key === key);
+}
+
+function validateRepairColumnShape(column, expectedTitle, category) {
+  const options = Array.isArray(column?.options) ? column.options.map(trimText).filter(Boolean) : [];
+  const missingOptions = category.values.filter(value => !options.includes(value));
+
+  if (missingOptions.length > 0) {
+    throw new Error(
+      `Cannot rename ${quoteColumnTitle(column?.title)} to ${quoteColumnTitle(expectedTitle)} because its option list is missing: ${missingOptions.join(", ")}.`
+    );
+  }
+}
+
+async function updateSmartsheetColumnTitle(sheetId, accessToken, column, newTitle) {
+  await smartsheetJson(
+    `/sheets/${encodeURIComponent(sheetId)}/columns/${encodeURIComponent(column.id)}`,
+    accessToken,
+    {
+      method: "PUT",
+      body: { title: newTitle },
+      operation: `Rename Smartsheet column ${column.title}`
+    }
+  );
+}
+
+async function repairSustainabilityColumnTitles(sheetId, accessToken) {
+  const sheet = await fetchSheet(sheetId, accessToken);
+  logSmartsheetSchemaDiagnostics(sheet, sheetId);
+
+  const lookup = columnTitleLookup(sheet.columns || []);
+  const renames = [];
+
+  for (const [oldTitle, newTitle, categoryKey] of SUSTAINABILITY_COLUMN_RENAMES) {
+    const existingNewColumn = lookup.get(newTitle);
+    const existingOldColumn = lookup.get(oldTitle);
+    const category = taxonomyCategoryByKey(categoryKey);
+
+    if (!category) {
+      throw new Error(`Internal taxonomy error: unknown opportunity category ${categoryKey}.`);
+    }
+
+    if (existingNewColumn && existingOldColumn) {
+      throw new Error(
+        `Cannot repair Smartsheet columns because both ${quoteColumnTitle(oldTitle)} and ${quoteColumnTitle(newTitle)} already exist.`
+      );
+    }
+
+    if (existingNewColumn) {
+      console.log(`Column already repaired: ${quoteColumnTitle(newTitle)}`);
+      continue;
+    }
+
+    if (!existingOldColumn) {
+      throw new Error(
+        `Cannot repair Smartsheet columns because ${quoteColumnTitle(oldTitle)} was not found.`
+      );
+    }
+
+    validateRepairColumnShape(existingOldColumn, newTitle, category);
+    renames.push([existingOldColumn, newTitle]);
+  }
+
+  if (renames.length === 0) {
+    console.log("No Smartsheet sustainability column title repairs were required.");
+    return;
+  }
+
+  for (const [column, newTitle] of renames) {
+    console.log(`Renaming Smartsheet column ${quoteColumnTitle(column.title)} -> ${quoteColumnTitle(newTitle)}`);
+    await updateSmartsheetColumnTitle(sheetId, accessToken, column, newTitle);
+  }
+
+  console.log(`Renamed ${renames.length} Smartsheet sustainability opportunity column title(s).`);
+}
+
 async function writeGitHubOutput(name, value) {
   const outputPath = process.env.GITHUB_OUTPUT;
   if (!outputPath) return;
@@ -1256,6 +1365,14 @@ async function runWriteBack() {
   console.log(`Smartsheet update count: ${result.updatedCount}`);
 }
 
+async function runRepairColumns() {
+  assertProductionPublishGuards();
+
+  const accessToken = requireEnv("SMARTSHEET_ACCESS_TOKEN");
+  const sheetId = requireEnv("SMARTSHEET_SHEET_ID");
+  await repairSustainabilityColumnTitles(sheetId, accessToken);
+}
+
 async function main() {
   const command = process.argv[2] || "prepare";
 
@@ -1271,6 +1388,11 @@ async function main() {
 
   if (command === "writeback") {
     await runWriteBack();
+    return;
+  }
+
+  if (command === "repair-columns") {
+    await runRepairColumns();
     return;
   }
 
