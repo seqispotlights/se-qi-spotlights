@@ -16,29 +16,35 @@
     "description": "The C.A.R.E. Collaborative is a multi-site QI project implemented across seven long-term care homes in British Columbia and focused on reducing unnecessary and avoidable emergency department transfers from long-term care facilities.",
     "cobenefit": "Strong starting point for teams new to planetary health. Supports early-stage project development. Valuable Resources: Care Pathways: Guidance on Appraising Sustainability Emergency Department Visit Module (2015) https://networks.sustainablehealthcare.org.uk/sites/default/files/resources/3._Sustainable_Care_Pathways_Guidance_-_Emergency_Department_Visit_Module_-_Oct_2015%283%29.pdf ; British Columbia Emergency Health Services  2023 Climate Change Accountability Report https://www.bcehs.ca/our-services-site/Documents/2023%20BCEHS%20CCAR%20-%20FINAL%20PDF_MC.pdf",
     "sustainabilityPrinciples": [
-      "Prevention",
-      "Stewardship / Appropriateness",
-      "Mitigation / Decarbonization",
-      "Adaptation and Resilience"
+      "Stewardship / Appropriateness"
     ],
-    "sustainabilityOpportunities": [
-      {
-        "name": "Prevention",
-        "explanation": "Avoiding complications and patient deterioration through improved continuity of care."
-      },
-      {
-        "name": "Stewardship / Appropriateness",
-        "explanation": "Avoiding unnecessary hospital-based care and minimizing delays in care delivery."
-      },
-      {
-        "name": "Mitigation / Decarbonization",
-        "explanation": "Reducing unnecessary resource consumption associated with avoidable acute care utilization. Reducing unnecessary medical waste generation associated with avoidable acute care utilization. Reducing patient transfers and associated transportation-related emissions."
-      },
-      {
-        "name": "Adaptation and Resilience",
-        "explanation": "Supporting patient resilience by enabling care within familiar environments and reducing exposure to system-related stressors."
-      }
-    ],
+    "sustainabilityOpportunities": {
+      "prevention": [
+        "Avoiding Complications of Care"
+      ],
+      "stewardshipAppropriateness": [
+        "Avoid Unnecessary Hospital-based Care",
+        "Minimize Delays in Care"
+      ],
+      "mitigationDecarbonization": [
+        "Consumables",
+        "Travel and Transportation",
+        "Waste management"
+      ],
+      "climateResilienceAdaptation": [
+        "Patient resilience"
+      ],
+      "clinicalSpecialtyTreatmentModality": [
+        "Emergency Room"
+      ]
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "Avoiding complications and patient deterioration through improved continuity of care.",
+      "stewardshipAppropriateness": "Avoiding unnecessary hospital-based care and minimizing delays in care delivery.",
+      "mitigationDecarbonization": "Reducing unnecessary resource consumption associated with avoidable acute care utilization. Reducing unnecessary medical waste generation associated with avoidable acute care utilization. Reducing patient transfers and associated transportation-related emissions.",
+      "climateResilienceAdaptation": "Supporting patient resilience by enabling care within familiar environments and reducing exposure to system-related stressors.",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
     "metrics": {
       "environmental": [
         "Avoided carbon emissions per emergency department admission (based on the NHS ER visit model).",
@@ -82,14 +88,28 @@
     "description": "This project aimed to improve waste segregation in the anesthesiology OR at St. Boniface Hospital and reduce unnecessary incineration of medical waste. Previously, a single pharmaceutical waste bin was used for mixed OR waste, which was then transported to Minnesota for high-carbon incineration. However, evidence suggests that most OR waste can instead be autoclaved or landfilled with lower environmental impact and cost. A new segregation system was therefore introduced with separate bins for sharps, pharmaceutical liquids, and general waste, supported by education sessions and ongoing staff coaching.",
     "cobenefit": "Waste Management and Reduction | The Canadian Coalition for Green Healthcare: https://greenhealthcare.ca/waste-management-and-reduction/\nImproper disposal of medical waste costs health systems and the environment | CMAJ: https://www.cmaj.ca/content/195/14/e518#:~:text=In%20a%20recent%20audit%20of,and%20cutlery%20from%20the%20cafeteria",
     "sustainabilityPrinciples": [
-      "Mitigation / Decarbonization"
+      "Decarbonization / Depollution"
     ],
-    "sustainabilityOpportunities": [
-      {
-        "name": "Mitigation / Decarbonization",
-        "explanation": "Improved organization of medical waste to ensure appropriate disposal pathways. Reduced energy consumption associated with high-temperature waste incineration, contributing to lower greenhouse gas emissions by diverting waste to lower-impact autoclave or landfill processes. Reduced long-distance transport of medical waste to Minnesota for incineration."
-      }
-    ],
+    "sustainabilityOpportunities": {
+      "prevention": [],
+      "stewardshipAppropriateness": [],
+      "mitigationDecarbonization": [
+        "Energy",
+        "Travel and Transportation",
+        "Waste management"
+      ],
+      "climateResilienceAdaptation": [],
+      "clinicalSpecialtyTreatmentModality": [
+        "Perioperative Care"
+      ]
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "",
+      "stewardshipAppropriateness": "",
+      "mitigationDecarbonization": "Improved organization of medical waste to ensure appropriate disposal pathways. Reduced energy consumption associated with high-temperature waste incineration, contributing to lower greenhouse gas emissions by diverting waste to lower-impact autoclave or landfill processes. Reduced long-distance transport of medical waste to Minnesota for incineration.",
+      "climateResilienceAdaptation": "",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
     "metrics": {
       "environmental": [
         "CO2e emissions from waste incineration before and after implementation of new waste segregation protocol.",
@@ -129,7 +149,20 @@
     "healthcareSetting": "",
     "description": "The initiative involved using the SE-QI Toolkit to support sustainability-focused quality improvement work within Northern Health, particularly in relation to clinical ideas such as reducing single-use materials, such as disposable patient gowns, and improving resource stewardship.",
     "sustainabilityPrinciples": [],
-    "sustainabilityOpportunities": [],
+    "sustainabilityOpportunities": {
+      "prevention": [],
+      "stewardshipAppropriateness": [],
+      "mitigationDecarbonization": [],
+      "climateResilienceAdaptation": [],
+      "clinicalSpecialtyTreatmentModality": []
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "",
+      "stewardshipAppropriateness": "",
+      "mitigationDecarbonization": "",
+      "climateResilienceAdaptation": "",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
     "metrics": {
       "environmental": [],
       "activity": []
@@ -160,29 +193,30 @@
     "description": "An initiative at St. Paul’s Hospital aimed to reduce failures of personal protective devices caused by depleted batteries in the Psychiatric Assessment and Stabilization Unit. A structured inventory control and battery replacement process was introduced to improve equipment reliability, enhance staff and patient safety, and reduce disruptions to care.",
     "cobenefit": "The Toolkit supports broader systems thinking by highlighting downstream effects, trade-offs, and co-benefits even in projects with mixed environmental implications.\n\nHealthcare Life Cycle Analysis (LCA) Database : https://healthcarelca.com/database",
     "sustainabilityPrinciples": [
-      "Prevention",
-      "Stewardship / Appropriateness",
-      "Mitigation / Decarbonization",
-      "Adaptation and Resilience"
+      "Stewardship / Appropriateness"
     ],
-    "sustainabilityOpportunities": [
-      {
-        "name": "Prevention",
-        "explanation": "Reducing incidents and preventing complications or extended hospital stays related to equipment failure."
-      },
-      {
-        "name": "Stewardship / Appropriateness",
-        "explanation": "Reducing inefficiencies by appropriately using healthcare resources."
-      },
-      {
-        "name": "Mitigation / Decarbonization",
-        "explanation": "Avoiding waste associated with preventable equipment replacements, resource-intensive emergency responses, or prolonged hospitalizations."
-      },
-      {
-        "name": "Adaptation and Resilience",
-        "explanation": "Improving reliability of essential equipment and strengthening staff and patient safety during routine and emergency care."
-      }
-    ],
+    "sustainabilityOpportunities": {
+      "prevention": [
+        "Avoiding Complications of Care"
+      ],
+      "stewardshipAppropriateness": [
+        "Minimize Delays in Care"
+      ],
+      "mitigationDecarbonization": [
+        "Waste management"
+      ],
+      "climateResilienceAdaptation": [
+        "Healthcare delivery resilience"
+      ],
+      "clinicalSpecialtyTreatmentModality": []
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "Reducing incidents and preventing complications or extended hospital stays related to equipment failure.",
+      "stewardshipAppropriateness": "Reducing inefficiencies by appropriately using healthcare resources.",
+      "mitigationDecarbonization": "Avoiding waste associated with preventable equipment replacements, resource-intensive emergency responses, or prolonged hospitalizations.",
+      "climateResilienceAdaptation": "Improving reliability of essential equipment and strengthening staff and patient safety during routine and emergency care.",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
     "metrics": {
       "environmental": [
         "Estimated CO2e impact associated with increased battery use, as a potential addressed trade-off."
@@ -227,19 +261,29 @@
     "description": "An early-stage, ongoing project focused on identifying where repetitive and unnecessary laboratory testing can be eliminated. New policy has been introduced to implement “hard stops” that prevent physicians from ordering tests earlier than recommended guidelines. The Toolkit will be applied to estimate the carbon emissions associated with avoided testing.",
     "cobenefit": "Choosing Wisely Canada | Drop the Pre-Op: https://choosingwiselycanada.org/wp-content/uploads/2017/07/CWC_Pre-Op_Toolkit_v1.2_2017-07-12.pdf\nChoosing Wisely Canada | Lab Recommendations: https://choosingwiselycanada.org/wp-content/uploads/2022/10/Choosing-Wisely-Canada-Labs-Recommendations-Full-List.pdf\nCASCADES Reducing Unnecessary Care: Estimating Environmental Impact.: https://view.publitas.com/5231e51e-4654-42c2-accd-b722e21f3093/perioperative_estimating-environmental-impacts-of-unnecessary-care/page/1?_gl=1*1yiwipz*_ga*NTQxOTQ2NDA3LjE3MjU2NTgzMzk.*_ga_TRM5NF4JFC*MTcyOTcwMzc4MC42LjEuMTcyOTcwNDIzMy4wLjAuMA",
     "sustainabilityPrinciples": [
-      "Stewardship / Appropriateness",
-      "Mitigation / Decarbonization"
+      "Stewardship / Appropriateness"
     ],
-    "sustainabilityOpportunities": [
-      {
-        "name": "Stewardship / Appropriateness",
-        "explanation": "Reducing unnecessary diagnostic testing and supporting appropriate use of laboratory resources."
-      },
-      {
-        "name": "Mitigation / Decarbonization",
-        "explanation": "Improving workflows through digitized ordering processes and system-level decision supports. Reducing medical and laboratory waste associated with unnecessary or repeat testing."
-      }
-    ],
+    "sustainabilityOpportunities": {
+      "prevention": [],
+      "stewardshipAppropriateness": [
+        "Avoid Unnecessary Diagnostics"
+      ],
+      "mitigationDecarbonization": [
+        "Care coordination",
+        "Waste management"
+      ],
+      "climateResilienceAdaptation": [],
+      "clinicalSpecialtyTreatmentModality": [
+        "Clinical Laboratory"
+      ]
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "",
+      "stewardshipAppropriateness": "Reducing unnecessary diagnostic testing and supporting appropriate use of laboratory resources.",
+      "mitigationDecarbonization": "Improving workflows through digitized ordering processes and system-level decision supports. Reducing medical and laboratory waste associated with unnecessary or repeat testing.",
+      "climateResilienceAdaptation": "",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
     "metrics": {
       "environmental": [
         "Estimated CO2e emissions avoided through reduced laboratory testing."
@@ -280,24 +324,30 @@
     "description": "This conceptual project focuses on improving HPV vaccine uptake among individuals who were aged 10–17 during the COVID-19 pandemic and may have missed routine school-based immunizations due to virtual learning and disrupted healthcare access. It is intended to strengthen preventive care delivery and reduce the long-term burden of HPV-related disease and complications.",
     "cobenefit": "The Toolkit helped broaden the framing of HPV vaccination QI efforts beyond clinical",
     "sustainabilityPrinciples": [
-      "Prevention",
-      "Stewardship / Appropriateness",
-      "Adaptation and Resilience"
+      "Prevention"
     ],
-    "sustainabilityOpportunities": [
-      {
-        "name": "Prevention",
-        "explanation": "Health promotion and primary prevention through improving HPV vaccination coverage and reducing the future burden of HPV-related disease."
-      },
-      {
-        "name": "Stewardship / Appropriateness",
-        "explanation": "Supporting appropriate use of healthcare resources by preventing avoidable future diagnostic and treatment needs associated with HPV-related complications, thereby reducing unnecessary medical waste, transportation emissions, and healthcare costs."
-      },
-      {
-        "name": "Adaptation and Resilience",
-        "explanation": "Supporting long-term population health resilience through preventive care and improved immunization coverage."
-      }
-    ],
+    "sustainabilityOpportunities": {
+      "prevention": [
+        "Health Promotion / Primary Prevention"
+      ],
+      "stewardshipAppropriateness": [
+        "Avoid Unnecessary Hospital-based Care"
+      ],
+      "mitigationDecarbonization": [],
+      "climateResilienceAdaptation": [
+        "Patient resilience"
+      ],
+      "clinicalSpecialtyTreatmentModality": [
+        "Primary Care"
+      ]
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "Health promotion and primary prevention through improving HPV vaccination coverage and reducing the future burden of HPV-related disease.",
+      "stewardshipAppropriateness": "Supporting appropriate use of healthcare resources by preventing avoidable future diagnostic and treatment needs associated with HPV-related complications, thereby reducing unnecessary medical waste, transportation emissions, and healthcare costs.",
+      "mitigationDecarbonization": "",
+      "climateResilienceAdaptation": "Supporting long-term population health resilience through preventive care and improved immunization coverage.",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
     "metrics": {
       "environmental": [
         "CO2e of HPV vaccination delivery versus CO2e of cervical cancer treatments potentially avoided."
@@ -335,7 +385,20 @@
     "healthcareSetting": "",
     "description": "An early-stage initiative involving exploration of the SE-QI Toolkit as a potential future resource to be introduced and disseminated to clinicians through Ontario Health’s Closing the Quality Gap campaign. The Toolkit has the potential to support surgical quality improvement projects by incorporating a valuable sustainability lens into clinically focused initiatives.",
     "sustainabilityPrinciples": [],
-    "sustainabilityOpportunities": [],
+    "sustainabilityOpportunities": {
+      "prevention": [],
+      "stewardshipAppropriateness": [],
+      "mitigationDecarbonization": [],
+      "climateResilienceAdaptation": [],
+      "clinicalSpecialtyTreatmentModality": []
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "",
+      "stewardshipAppropriateness": "",
+      "mitigationDecarbonization": "",
+      "climateResilienceAdaptation": "",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
     "metrics": {
       "environmental": [],
       "activity": []
@@ -366,29 +429,33 @@
     "description": "A transition from single-use blue wrap to reusable rigid sterilization containers for surgical instrument sterilization is currently being implemented across women’s and children’s operating rooms, and various ambulatory and inpatient units. The initiative includes procurement of over 1,200 containers and associated accessories (covers, baskets, liners, tags, etc.), totaling more than 8,000 items.",
     "cobenefit": "Step 2 of the Toolkit provided clear direction on how and where sustainability could be integrated into the project by mapping opportunities to relevant environmental impact areas.",
     "sustainabilityPrinciples": [
-      "Prevention",
-      "Stewardship / Appropriateness",
-      "Mitigation / Decarbonization",
-      "Adaptation and Resilience"
+      "Decarbonization / Depollution"
     ],
-    "sustainabilityOpportunities": [
-      {
-        "name": "Prevention",
-        "explanation": "Reducing infection risk from compromised wraps and avoiding surgical delays caused by torn blue wrap."
-      },
-      {
-        "name": "Stewardship / Appropriateness",
-        "explanation": "Improving efficiency in sterile processing and reducing ergonomic strain for medical reprocessing staff."
-      },
-      {
-        "name": "Mitigation / Decarbonization",
-        "explanation": "Reducing reliance on single-use blue wrap and associated disposable materials through reusable rigid containers. Reducing amount of waste generated in operating rooms, as well as, ambulatory and inpatient units."
-      },
-      {
-        "name": "Adaptation and Resilience",
-        "explanation": "Improving supply resilience and workflow reliability by reducing reliance on single-use sterile wrap materials."
-      }
-    ],
+    "sustainabilityOpportunities": {
+      "prevention": [
+        "Avoiding Complications of Care"
+      ],
+      "stewardshipAppropriateness": [
+        "Minimize Delays in Care"
+      ],
+      "mitigationDecarbonization": [
+        "Consumables",
+        "Waste management"
+      ],
+      "climateResilienceAdaptation": [
+        "Healthcare delivery resilience"
+      ],
+      "clinicalSpecialtyTreatmentModality": [
+        "Perioperative Care"
+      ]
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "Reducing infection risk from compromised wraps and avoiding surgical delays caused by torn blue wrap.",
+      "stewardshipAppropriateness": "Improving efficiency in sterile processing and reducing ergonomic strain for medical reprocessing staff.",
+      "mitigationDecarbonization": "Reducing reliance on single-use blue wrap and associated disposable materials through reusable rigid containers. Reducing amount of waste generated in operating rooms, as well as, ambulatory and inpatient units.",
+      "climateResilienceAdaptation": "Improving supply resilience and workflow reliability by reducing reliance on single-use sterile wrap materials.",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
     "metrics": {
       "environmental": [
         "Reduction in CO2e emissions associated with decreased use of single-use sterilization products."
@@ -426,19 +493,29 @@
     "description": "This initiative aims to promote reassessment of antidepressant prescriptions in primary care for patients who have been on treatment for over one year, addressing potential inappropriate long-term prescribing and reflexive renewal by family physicians. Clinical recommendations typically support reassessment after six months of remission, though this is often missed in practice.",
     "cobenefit": "The Toolkit helps users clearly visualize or conceptualize how their project contributes to sustainability outcomes.",
     "sustainabilityPrinciples": [
-      "Stewardship / Appropriateness",
-      "Mitigation / Decarbonization"
+      "Stewardship / Appropriateness"
     ],
-    "sustainabilityOpportunities": [
-      {
-        "name": "Stewardship / Appropriateness",
-        "explanation": "Avoids unnecessary long-term antidepressant use through improved reassessment, reducing over-treatment and supporting optimal, evidence-based prescribing practices."
-      },
-      {
-        "name": "Mitigation / Decarbonization",
-        "explanation": "Reduces pharmaceutical waste through decreased inappropriate prescriptions and refills."
-      }
-    ],
+    "sustainabilityOpportunities": {
+      "prevention": [],
+      "stewardshipAppropriateness": [
+        "Avoid Unnecessary Treatments"
+      ],
+      "mitigationDecarbonization": [
+        "Waste management"
+      ],
+      "climateResilienceAdaptation": [],
+      "clinicalSpecialtyTreatmentModality": [
+        "Medications & Pharmacy",
+        "Primary Care"
+      ]
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "",
+      "stewardshipAppropriateness": "Avoids unnecessary long-term antidepressant use through improved reassessment, reducing over-treatment and supporting optimal, evidence-based prescribing practices.",
+      "mitigationDecarbonization": "Reduces pharmaceutical waste through decreased inappropriate prescriptions and refills.",
+      "climateResilienceAdaptation": "",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
     "metrics": {
       "environmental": [
         "Estimated CO2e associated with antidepressant medication use avoided (based on number of treatment-days avoided or units deprescribed)."
@@ -485,29 +562,32 @@
     "description": "This project was a collaboration between a primary care pharmacist and a family physician to reduce the environmental impact of inhaler prescribing in primary care. The initiative focused on optimizing respiratory care by assessing whether inhalers were needed, identifying opportunities for deprescribing when clinically appropriate, switching patients to lower-carbon dry powder inhalers, and providing education on inhaler disposal. Patients’ experiences with team-based care were also explored, including the role of sustainability considerations and the value of in-depth conversations in healthcare decision-making.",
     "cobenefit": "The Toolkit offers helpful reinforcement of existing knowledge and the reminder to consistently apply a sustainability lens when completing quality improvement work.",
     "sustainabilityPrinciples": [
-      "Prevention",
-      "Stewardship / Appropriateness",
-      "Mitigation / Decarbonization",
-      "Clinical Specialties or Treatment Modality"
+      "Stewardship / Appropriateness"
     ],
-    "sustainabilityOpportunities": [
-      {
-        "name": "Prevention",
-        "explanation": "Supporting the optimal management of respiratory diseases and avoiding unnecessary or inappropriate treatment."
-      },
-      {
-        "name": "Stewardship / Appropriateness",
-        "explanation": "Reducing unnecessary inhaler prescribing and identifying opportunities for deprescribing to facilitate appropriate treatments and lower overall consumption of medical resources."
-      },
-      {
-        "name": "Mitigation / Decarbonization",
-        "explanation": "Testing a more comprehensive and adaptable care approach through team-based care, involving collaboration between physicians, pharmacists, and patients. Educating patients on proper inhaler disposal and recycling practices.Educating patients on proper inhaler disposal and recycling practices."
-      },
-      {
-        "name": "Clinical Specialties or Treatment Modality",
-        "explanation": "Lowering the carbon footprint of respiratory care by reassessing inhaler prescribing practices from a sustainability-focused lens."
-      }
-    ],
+    "sustainabilityOpportunities": {
+      "prevention": [
+        "Optimal Disease Management"
+      ],
+      "stewardshipAppropriateness": [
+        "Avoid Unnecessary Treatments"
+      ],
+      "mitigationDecarbonization": [
+        "Care coordination",
+        "Waste management"
+      ],
+      "climateResilienceAdaptation": [],
+      "clinicalSpecialtyTreatmentModality": [
+        "Inhalers",
+        "Primary Care"
+      ]
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "Supporting the optimal management of respiratory diseases and avoiding unnecessary or inappropriate treatment.",
+      "stewardshipAppropriateness": "Reducing unnecessary inhaler prescribing and identifying opportunities for deprescribing to facilitate appropriate treatments and lower overall consumption of medical resources.",
+      "mitigationDecarbonization": "Testing a more comprehensive and adaptable care approach through team-based care, involving collaboration between physicians, pharmacists, and patients. Educating patients on proper inhaler disposal and recycling practices.",
+      "climateResilienceAdaptation": "",
+      "clinicalSpecialtyTreatmentModality": "Lowering the carbon footprint of respiratory care by reassessing inhaler prescribing practices from a sustainability-focused lens."
+    },
     "metrics": {
       "environmental": [
         "Change in overall carbon emissions from inhaler prescribing pre- and post-intervention using life cycle assessment datasets."
@@ -555,19 +635,28 @@
     "description": "An initiative in an outpatient renal clinic aimed to reduce paper waste by digitizing the receipt of community laboratory blood work results. The previous fax-based process generated approximately 70–120 pages per day, including cover sheets and duplicate reports that were routinely discarded.",
     "cobenefit": "The guidance for identifying and quantifying environmental impacts within QI projects, particularly through CO₂e estimation tools for paper use.",
     "sustainabilityPrinciples": [
-      "Mitigation / Decarbonization",
-      "Adaptation and Resilience"
+      "Decarbonization / Depollution"
     ],
-    "sustainabilityOpportunities": [
-      {
-        "name": "Mitigation / Decarbonization",
-        "explanation": "Digitizing processes to improve information flow and reduce reliance on paper-based systems. Reducing paper use and associated waste through elimination of printed faxes. Reducing energy associated with printing and paper handling."
-      },
-      {
-        "name": "Adaptation and Resilience",
-        "explanation": "Supporting provider resilience through more efficient, streamlined digital workflows."
-      }
-    ],
+    "sustainabilityOpportunities": {
+      "prevention": [],
+      "stewardshipAppropriateness": [],
+      "mitigationDecarbonization": [
+        "Care coordination",
+        "Energy",
+        "Waste management"
+      ],
+      "climateResilienceAdaptation": [
+        "Provider resilience"
+      ],
+      "clinicalSpecialtyTreatmentModality": []
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "",
+      "stewardshipAppropriateness": "",
+      "mitigationDecarbonization": "Digitizing processes to improve information flow and reduce reliance on paper-based systems. Reducing paper use and associated waste through elimination of printed faxes. Reducing energy associated with printing and paper handling.",
+      "climateResilienceAdaptation": "Supporting provider resilience through more efficient, streamlined digital workflows.",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
     "metrics": {
       "environmental": [
         "Estimated CO₂e emissions avoided through reduced paper use and elimination of printed faxes. Calculated at",
@@ -605,7 +694,20 @@
     "healthcareSetting": "",
     "description": "Health Quality BC’s Quality Academy is a six-month professional development program that builds learners’ capability to lead quality and safety initiatives through formal instruction, mentorship, and an applied improvement project. The SE-QI Toolkit is now embedded in a dedicated session that explores how sustainability can be incorporated into quality improvement.",
     "sustainabilityPrinciples": [],
-    "sustainabilityOpportunities": [],
+    "sustainabilityOpportunities": {
+      "prevention": [],
+      "stewardshipAppropriateness": [],
+      "mitigationDecarbonization": [],
+      "climateResilienceAdaptation": [],
+      "clinicalSpecialtyTreatmentModality": []
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "",
+      "stewardshipAppropriateness": "",
+      "mitigationDecarbonization": "",
+      "climateResilienceAdaptation": "",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
     "metrics": {
       "environmental": [],
       "activity": []
@@ -635,7 +737,20 @@
     "healthcareSetting": "",
     "description": "Healthcare Excellence Canada’s EXTRA program is a team-based, action-oriented leadership development program that supports healthcare leaders to advance quality, safety, and system transformation through applied improvement projects. The SE-QI Toolkit is now included within the EXTRA curriculum to strengthen participants’ capacity to integrate sustainability into their improvement work.",
     "sustainabilityPrinciples": [],
-    "sustainabilityOpportunities": [],
+    "sustainabilityOpportunities": {
+      "prevention": [],
+      "stewardshipAppropriateness": [],
+      "mitigationDecarbonization": [],
+      "climateResilienceAdaptation": [],
+      "clinicalSpecialtyTreatmentModality": []
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "",
+      "stewardshipAppropriateness": "",
+      "mitigationDecarbonization": "",
+      "climateResilienceAdaptation": "",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
     "metrics": {
       "environmental": [],
       "activity": []
@@ -665,7 +780,20 @@
     "healthcareSetting": "",
     "description": "The CASCADES Pan-Canadian Practice Network connects healthcare professionals and organizations across Canada to build capacity, exchange knowledge, and advance environmentally sustainable health systems. Within the Network, the SE-QI Working Group, co-chaired by Vancouver Coastal Health and Healthcare Excellence Canada, brings together representatives from participating organizations to advance the integration of sustainability into quality improvement practice.\nThe Working Group supports the mobilization, application, and continued improvement of the SE-QI Framework, Toolkit, and Spotlight, while fostering shared learning across organizations and helping strengthen the field of sustainability-embedded quality improvement in Canada.",
     "sustainabilityPrinciples": [],
-    "sustainabilityOpportunities": [],
+    "sustainabilityOpportunities": {
+      "prevention": [],
+      "stewardshipAppropriateness": [],
+      "mitigationDecarbonization": [],
+      "climateResilienceAdaptation": [],
+      "clinicalSpecialtyTreatmentModality": []
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "",
+      "stewardshipAppropriateness": "",
+      "mitigationDecarbonization": "",
+      "climateResilienceAdaptation": "",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
     "metrics": {
       "environmental": [],
       "activity": []

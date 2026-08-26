@@ -9,6 +9,7 @@ import {
   PROJECT_TOOLKIT_USE,
   PUBLISHED_STATUS,
   READY_TO_PUBLISH_STATUS,
+  SUSTAINABILITY_TAXONOMY,
   ValidationError,
   generatePreviewWithAttachments,
   generatePreviewRecords
@@ -36,6 +37,18 @@ const columns = EXPECTED_COLUMN_TITLES.map((title, index) => ({
   title
 }));
 const columnIdByTitle = new Map(columns.map(column => [column.title, column.id]));
+
+function emptySustainabilityOpportunities() {
+  return Object.fromEntries(
+    SUSTAINABILITY_TAXONOMY.opportunities.map(category => [category.key, []])
+  );
+}
+
+function emptySustainabilityOpportunityComments() {
+  return Object.fromEntries(
+    SUSTAINABILITY_TAXONOMY.opportunities.map(category => [category.key, ""])
+  );
+}
 
 function cell(title, value) {
   const cellValue =
@@ -66,7 +79,9 @@ function projectRow(overrides = {}) {
     "Project stage": overrides.stage || "Work in progress",
     "Healthcare setting": "Synthetic setting",
     "Most valuable toolkit elements": "Synthetic toolkit elements",
-    Prevention: true,
+    "Sustainability Principles": overrides.principles ?? "Prevention",
+    "Opportunity - Prevention":
+      overrides.preventionOpportunities ?? "Avoiding Complications of Care",
     "Prevention - Comments": "Synthetic prevention opportunity"
   };
 
@@ -284,28 +299,44 @@ test("Phase 2B mapping validates ID, type, title, description, stage, organizati
   assert.equal(result.records[0].organization, "Synthetic Organization");
   assert.equal(result.records[0].photo, "images/existing.jpg");
   assert.deepEqual(result.records[0].sustainabilityPrinciples, ["Prevention"]);
-  assert.deepEqual(result.records[0].sustainabilityOpportunities, [
-    {
-      name: "Prevention",
-      explanation: "Synthetic prevention opportunity"
-    }
-  ]);
+  assert.deepEqual(result.records[0].sustainabilityOpportunities, {
+    prevention: ["Avoiding Complications of Care"],
+    stewardshipAppropriateness: [],
+    mitigationDecarbonization: [],
+    climateResilienceAdaptation: [],
+    clinicalSpecialtyTreatmentModality: []
+  });
+  assert.equal(
+    result.records[0].sustainabilityOpportunityComments.prevention,
+    "Synthetic prevention opportunity"
+  );
 });
 
-test("Phase 2B maps all five sustainability fields to current public labels", async () => {
+test("Phase 2B maps new multi-select sustainability fields and keeps dimensions separate", async () => {
   const imagesDirectory = await tempImages(["existing.jpg"]);
   const result = generatePreviewRecords(
     sheet([
       projectRow({
         cells: {
-          "Stewardship / Appropriateness": true,
+          "Sustainability Principles": {
+            objectValue: {
+              values: ["Stewardship / Appropriateness", "Decarbonization / Depoluttion"]
+            },
+            displayValue:
+              "Stewardship / Appropriateness\nDecarbonization / Depoluttion"
+          },
+          "Opportunity - Stewardship / Appropriateness":
+            "Avoid Unnecessary Hospital-based Care\nMinimize Delays in Care",
           "Stewardship Comments": "Synthetic stewardship opportunity",
-          "Mitigation / Decarbonization": true,
+          "Opportunity - Mitigation / Decarbonization": {
+            objectValue: { values: ["Care coordination", "Waste management"] },
+            displayValue: "Care coordination\nWaste management"
+          },
           "Mitigation / Decarbonization - comments":
             "Category note: Synthetic mitigation opportunity",
-          "Climate resilience and adaptation": true,
-          "Climate resilience and adaptation - Comments": "",
-          "Clinical specialty or treatment modality": true,
+          "Opportunity - Climate resilience and adaptation": "Patient resilience",
+          "Climate resilience and adaptation - Comments": "Synthetic climate opportunity",
+          "Opp - Clinical specialty / treatment modality": "Clinical Laboratory\nPrimary Care",
           "Clinical specialty or treatment modality - Comment": "Synthetic clinical opportunity"
         }
       })
@@ -314,27 +345,74 @@ test("Phase 2B maps all five sustainability fields to current public labels", as
   );
 
   assert.deepEqual(result.records[0].sustainabilityPrinciples, [
+    "Stewardship / Appropriateness",
+    "Decarbonization / Depollution"
+  ]);
+  assert.deepEqual(result.records[0].sustainabilityOpportunities, {
+    prevention: ["Avoiding Complications of Care"],
+    stewardshipAppropriateness: [
+      "Avoid Unnecessary Hospital-based Care",
+      "Minimize Delays in Care"
+    ],
+    mitigationDecarbonization: ["Care coordination", "Waste management"],
+    climateResilienceAdaptation: ["Patient resilience"],
+    clinicalSpecialtyTreatmentModality: ["Clinical Laboratory", "Primary Care"]
+  });
+  assert.deepEqual(result.records[0].sustainabilityOpportunityComments, {
+    prevention: "Synthetic prevention opportunity",
+    stewardshipAppropriateness: "Synthetic stewardship opportunity",
+    mitigationDecarbonization: "Category note: Synthetic mitigation opportunity",
+    climateResilienceAdaptation: "Synthetic climate opportunity",
+    clinicalSpecialtyTreatmentModality: "Synthetic clinical opportunity"
+  });
+});
+
+test("Phase 2B does not split comma-containing fallback values", async () => {
+  const imagesDirectory = await tempImages(["existing.jpg"]);
+
+  assert.throws(
+    () =>
+      generatePreviewRecords(
+        sheet([
+          projectRow({
+            preventionOpportunities:
+              "Screening / Early Detection, Avoiding Complications of Care"
+          })
+        ]),
+        { imagesDirectory }
+      ),
+    error =>
+      error instanceof ValidationError &&
+      JSON.stringify(error.errors).includes("Unexpected Opportunity - Prevention value")
+  );
+});
+
+test("Phase 2B ignores retired boolean opportunity columns when they coexist", async () => {
+  const imagesDirectory = await tempImages(["existing.jpg"]);
+  const oldColumns = [
     "Prevention",
     "Stewardship / Appropriateness",
-    "Mitigation / Decarbonization",
-    "Adaptation and Resilience",
-    "Clinical Specialties or Treatment Modality"
-  ]);
-  assert.deepEqual(
-    result.records[0].sustainabilityOpportunities.map(opportunity => opportunity.name),
-    [
-      "Prevention",
-      "Stewardship / Appropriateness",
-      "Mitigation / Decarbonization",
-      "Adaptation and Resilience",
-      "Clinical Specialties or Treatment Modality"
-    ]
+    "Climate resilience and adaptation",
+    "Clinical specialty or treatment modality",
+    "Mitigation / Decarbonization"
+  ].map((title, index) => ({ id: columns.length + index + 1, title }));
+  const oldColumnIds = new Map(oldColumns.map(column => [column.title, column.id]));
+  const row = projectRow({ preventionOpportunities: "" });
+
+  row.cells.push(
+    ...oldColumns.map(column => ({
+      columnId: oldColumnIds.get(column.title),
+      value: true,
+      displayValue: true
+    }))
   );
-  assert.equal(
-    result.records[0].sustainabilityOpportunities[2].explanation,
-    "Synthetic mitigation opportunity"
+
+  const result = generatePreviewRecords(
+    { columns: [...columns, ...oldColumns], rows: [row] },
+    { imagesDirectory }
   );
-  assert.equal(result.records[0].sustainabilityOpportunities[3].explanation, "");
+
+  assert.deepEqual(result.records[0].sustainabilityOpportunities, emptySustainabilityOpportunities());
 });
 
 test("Phase 2B default preview includes Ready to publish only", async () => {
@@ -760,10 +838,30 @@ test("Phase 3 rejects unapproved generated sustainability categories", () => {
         {
           id: "SEQI-0021",
           sustainabilityPrinciples: ["Retired category"],
-          sustainabilityOpportunities: []
+          sustainabilityOpportunities: emptySustainabilityOpportunities(),
+          sustainabilityOpportunityComments: emptySustainabilityOpportunityComments()
         }
       ]),
     PublishValidationError
+  );
+});
+
+test("Phase 3 rejects the retired flat sustainability opportunity schema", () => {
+  assert.throws(
+    () =>
+      validateGeneratedWebsiteRecords([
+        {
+          id: "SEQI-0021",
+          sustainabilityPrinciples: ["Prevention"],
+          sustainabilityOpportunities: [
+            { name: "Prevention", explanation: "Retired flat schema" }
+          ],
+          sustainabilityOpportunityComments: emptySustainabilityOpportunityComments()
+        }
+      ]),
+    error =>
+      error instanceof PublishValidationError &&
+      JSON.stringify(error.errors).includes("sustainabilityOpportunities must be an object")
   );
 });
 
@@ -776,7 +874,8 @@ test("Phase 3 rejects null and non-finite generated values", () => {
           optionalText: null,
           invalidMetric: Number.NaN,
           sustainabilityPrinciples: [],
-          sustainabilityOpportunities: []
+          sustainabilityOpportunities: emptySustainabilityOpportunities(),
+          sustainabilityOpportunityComments: emptySustainabilityOpportunityComments()
         }
       ]),
     PublishValidationError
@@ -804,7 +903,7 @@ test("Phase 3 keeps optional blank fields render-safe", async () => {
   });
   assert.equal(plan.records[0].email, "");
   assert.equal(plan.records[0].healthcareSetting, "");
-  assert.equal(plan.records[0].sustainabilityOpportunities[0].explanation, "");
+  assert.equal(plan.records[0].sustainabilityOpportunityComments.prevention, "");
   assert.doesNotMatch(plan.serialized, /\b(?:undefined|NaN)\b/);
 });
 
@@ -1108,7 +1207,8 @@ test("Phase 3 skips a Ready row with a blank date without removing its live reco
     description: "Existing public record",
     cobenefit: "",
     sustainabilityPrinciples: [],
-    sustainabilityOpportunities: [],
+    sustainabilityOpportunities: emptySustainabilityOpportunities(),
+    sustainabilityOpportunityComments: emptySustainabilityOpportunityComments(),
     metrics: { environmental: [], activity: [] },
     domainsOfQuality: []
   };

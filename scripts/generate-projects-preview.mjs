@@ -14,16 +14,13 @@ export const READY_TO_PUBLISH_STATUS = "Ready to publish";
 export const PUBLISHED_STATUS = "Published";
 export const PROJECT_TOOLKIT_USE = "For a specific project";
 export const INITIATIVE_TOOLKIT_USE = "As a training or capacity building tool";
-export const APPROVED_SUSTAINABILITY_CATEGORIES = Object.freeze([
-  "Prevention",
-  "Stewardship / Appropriateness",
-  "Mitigation / Decarbonization",
-  "Adaptation and Resilience",
-  "Clinical Specialties or Treatment Modality"
-]);
-const WEBSITE_LABEL_OVERRIDES = new Map([
-  ["Climate resilience and adaptation", "Adaptation and Resilience"],
-  ["Clinical specialty or treatment modality", "Clinical Specialties or Treatment Modality"]
+export const SUSTAINABILITY_TAXONOMY = Object.freeze(
+  JSON.parse(
+    await readFile(new URL("../data/sustainability-taxonomy.json", import.meta.url), "utf8")
+  )
+);
+export const APPROVED_SUSTAINABILITY_PRINCIPLES = Object.freeze([
+  ...SUSTAINABILITY_TAXONOMY.principles.values
 ]);
 const SUPPORTED_PREVIEW_IMAGE_EXTENSIONS = new Set([
   ".jpg",
@@ -51,16 +48,17 @@ export const EXPECTED_COLUMN_TITLES = [
   "Healthcare setting",
   "Sustainability considered prior to toolkit",
   "Sustainability position after toolkit",
-  "Prevention",
+  "Sustainability Principles",
+  "Opportunity - Prevention",
   "Prevention - Comments",
-  "Stewardship / Appropriateness",
+  "Opportunity - Stewardship / Appropriateness",
   "Stewardship Comments",
-  "Climate resilience and adaptation",
-  "Climate resilience and adaptation - Comments",
-  "Clinical specialty or treatment modality",
-  "Clinical specialty or treatment modality - Comment",
-  "Mitigation / Decarbonization",
+  "Opportunity - Mitigation / Decarbonization",
   "Mitigation / Decarbonization - comments",
+  "Opportunity - Climate resilience and adaptation",
+  "Climate resilience and adaptation - Comments",
+  "Opp - Clinical specialty / treatment modality",
+  "Clinical specialty or treatment modality - Comment",
   "Activity data",
   "Environmental data",
   "Cost/Savings Data",
@@ -120,6 +118,7 @@ export const PROJECT_COLUMN_TITLES = {
   stage: "Project stage",
   healthcareSetting: "Healthcare setting",
   mostValuableElements: "Most valuable toolkit elements",
+  sustainabilityPrinciples: SUSTAINABILITY_TAXONOMY.principles.column,
   activityData: "Activity data",
   environmentalData: "Environmental data"
 };
@@ -134,22 +133,6 @@ export const INITIATIVE_COLUMN_TITLES = {
   qiIntegration: "Potential for formal QI integration?",
   qiIntegrationComments: "QI integration comments"
 };
-
-const SUSTAINABILITY_PRINCIPLE_COLUMNS = [
-  "Prevention",
-  "Stewardship / Appropriateness",
-  "Mitigation / Decarbonization",
-  "Climate resilience and adaptation",
-  "Clinical specialty or treatment modality"
-];
-
-const OPPORTUNITY_PAIRS = [
-  ["Prevention", "Prevention - Comments"],
-  ["Stewardship / Appropriateness", "Stewardship Comments"],
-  ["Mitigation / Decarbonization", "Mitigation / Decarbonization - comments"],
-  ["Climate resilience and adaptation", "Climate resilience and adaptation - Comments"],
-  ["Clinical specialty or treatment modality", "Clinical specialty or treatment modality - Comment"]
-];
 
 const DOMAIN_PAIRS = [
   ["Efficiency", "Efficiency - Comments"],
@@ -282,41 +265,45 @@ function uniqueTrimmed(values) {
   return result;
 }
 
-function toWebsiteLabel(value) {
-  const trimmed = trimText(value);
-  return WEBSITE_LABEL_OVERRIDES.get(trimmed) || trimmed;
-}
-
-function uniqueWebsiteLabels(values) {
-  return uniqueTrimmed(values.map(toWebsiteLabel));
-}
-
 function parseDelimitedValues(value) {
   const text = trimText(value);
   if (!text) return [];
 
-  return uniqueTrimmed(text.split(/\r?\n|[;,|]/));
+  return uniqueTrimmed(text.split(/\r?\n/));
 }
 
-function getMultiSelectValues(row, column) {
+export function getMultiSelectValues(row, column) {
   const cell = getCell(row, column);
   if (!cell) return [];
 
   if (Array.isArray(cell.objectValue?.values)) {
-    return uniqueWebsiteLabels(cell.objectValue.values);
+    return uniqueTrimmed(cell.objectValue.values);
   }
 
   if (Array.isArray(cell.value)) {
-    return uniqueWebsiteLabels(cell.value);
+    return uniqueTrimmed(cell.value);
   }
 
   if (Array.isArray(cell.displayValue)) {
-    return uniqueWebsiteLabels(cell.displayValue);
+    return uniqueTrimmed(cell.displayValue);
   }
 
-  return uniqueWebsiteLabels(
-    parseDelimitedValues(cell.displayValue ?? cell.value ?? cell.objectValue?.value)
-  );
+  return parseDelimitedValues(cell.displayValue ?? cell.value ?? cell.objectValue?.value);
+}
+
+function normalizeTaxonomyValues(row, column, definition) {
+  const aliases = definition.aliases || {};
+  const allowedValues = new Set(definition.values);
+  const values = getMultiSelectValues(row, column).map(value => aliases[value] || value);
+  const unexpectedValues = values.filter(value => !allowedValues.has(value));
+
+  if (unexpectedValues.length > 0) {
+    throw new Error(
+      `Unexpected ${definition.column} value(s): ${uniqueTrimmed(unexpectedValues).join(", ")}.`
+    );
+  }
+
+  return uniqueTrimmed(values);
 }
 
 function stripBulletPrefix(value) {
@@ -385,7 +372,7 @@ function buildDetailPairs(row, columnLookup, pairs) {
   return pairs
     .filter(([checkboxTitle]) => isClearlyAffirmative(row, columnLookup.get(checkboxTitle)))
     .map(([checkboxTitle, commentsTitle]) => ({
-      name: toWebsiteLabel(checkboxTitle),
+      name: checkboxTitle,
       explanation: cleanOpportunityComment(getCellText(row, columnLookup.get(commentsTitle)))
     }));
 }
@@ -396,10 +383,43 @@ function cleanOpportunityComment(value) {
     .trim();
 }
 
-function buildSelectedLabels(row, columnLookup, columnTitles) {
-  return columnTitles
-    .filter(columnTitle => isClearlyAffirmative(row, columnLookup.get(columnTitle)))
-    .map(toWebsiteLabel);
+function emptySustainabilityOpportunities() {
+  return Object.fromEntries(
+    SUSTAINABILITY_TAXONOMY.opportunities.map(category => [category.key, []])
+  );
+}
+
+function emptySustainabilityOpportunityComments() {
+  return Object.fromEntries(
+    SUSTAINABILITY_TAXONOMY.opportunities.map(category => [category.key, ""])
+  );
+}
+
+function buildSustainabilityFields(row, columnLookup) {
+  const opportunities = emptySustainabilityOpportunities();
+  const opportunityComments = emptySustainabilityOpportunityComments();
+
+  for (const category of SUSTAINABILITY_TAXONOMY.opportunities) {
+    opportunities[category.key] = normalizeTaxonomyValues(
+      row,
+      columnLookup.get(category.column),
+      category
+    );
+    opportunityComments[category.key] = getCellText(
+      row,
+      columnLookup.get(category.commentsColumn)
+    );
+  }
+
+  return {
+    principles: normalizeTaxonomyValues(
+      row,
+      columnLookup.get(PROJECT_COLUMN_TITLES.sustainabilityPrinciples),
+      SUSTAINABILITY_TAXONOMY.principles
+    ),
+    opportunities,
+    opportunityComments
+  };
 }
 
 function getFinalPhotoFilename(row, columnLookup, options = {}) {
@@ -438,6 +458,7 @@ function buildCommonRecord(row, columnLookup, recordType, title, fallbackDate, o
 function mapProjectRow(row, columnLookup, fallbackDate, options = {}) {
   const title = getCellText(row, columnLookup.get(PROJECT_COLUMN_TITLES.title));
   const common = buildCommonRecord(row, columnLookup, "project", title, fallbackDate, options);
+  const sustainability = buildSustainabilityFields(row, columnLookup);
 
   return {
     ...common,
@@ -445,12 +466,9 @@ function mapProjectRow(row, columnLookup, fallbackDate, options = {}) {
     healthcareSetting: getCellText(row, columnLookup.get(PROJECT_COLUMN_TITLES.healthcareSetting)),
     description: getCellText(row, columnLookup.get(PROJECT_COLUMN_TITLES.description)),
     cobenefit: getCellText(row, columnLookup.get(PROJECT_COLUMN_TITLES.mostValuableElements)),
-    sustainabilityPrinciples: buildSelectedLabels(
-      row,
-      columnLookup,
-      SUSTAINABILITY_PRINCIPLE_COLUMNS
-    ),
-    sustainabilityOpportunities: buildDetailPairs(row, columnLookup, OPPORTUNITY_PAIRS),
+    sustainabilityPrinciples: sustainability.principles,
+    sustainabilityOpportunities: sustainability.opportunities,
+    sustainabilityOpportunityComments: sustainability.opportunityComments,
     metrics: {
       environmental: splitListField(
         getCellText(row, columnLookup.get(PROJECT_COLUMN_TITLES.environmentalData))
@@ -474,7 +492,8 @@ function mapInitiativeRow(row, columnLookup, fallbackDate, options = {}) {
     healthcareSetting: "",
     description: getCellText(row, columnLookup.get(INITIATIVE_COLUMN_TITLES.description)),
     sustainabilityPrinciples: [],
-    sustainabilityOpportunities: [],
+    sustainabilityOpportunities: emptySustainabilityOpportunities(),
+    sustainabilityOpportunityComments: emptySustainabilityOpportunityComments(),
     metrics: {
       environmental: [],
       activity: []

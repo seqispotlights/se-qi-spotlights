@@ -1,90 +1,34 @@
 /* =========================================
-  SE-QI Toolkit Project Gallery
-  script.js â€” Project Data + Filter Logic
+   SE-QI Toolkit Project Gallery
+   Project loading, faceted filtering, search, cards, and detail views.
+   Sustainability taxonomy is loaded from data/sustainability-taxonomy.json.
+   ========================================= */
 
-  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-  HOW TO EDIT PROJECTS
-  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-
-  Find project records in data/projects.json.
-  Each object is one project or initiative card.
-
-  For sustainabilityPrinciples â€” pick ONE OR MORE
-  from this exact list (copy-paste the text):
-  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    "Prevention"
-    "Stewardship / Appropriateness"
-    "Mitigation / Decarbonization"
-    "Adaptation and Resilience"
-    "Clinical Specialties or Treatment Modality"
-  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-  For sustainabilityOpportunities â€” each entry needs
-  a "name" (from the list below) and an "explanation".
-  Pick ONE OR MORE names from this exact list:
-  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    "Prevention"
-    "Stewardship / Appropriateness"
-    "Mitigation / Decarbonization"
-    "Adaptation and Resilience"
-    "Clinical Specialties or Treatment Modality"
-  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-  âš  IMPORTANT: The filter works by matching the
-  text exactly. Copy-paste from the lists above
-  â€” do not retype or the filter won't match.
-
-  For domainsOfQuality â€” write any name and
-  explanation you like. These are display-only
-  and do not affect filtering.
-  â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
-
-/* ---- PROJECT DATA ---- */
-/* Project records are loaded from data/projects.json at startup. */
 let PROJECTS = [];
-
-const SUSTAINABILITY_CATEGORIES = Object.freeze([
-    "Prevention",
-    "Stewardship / Appropriateness",
-    "Mitigation / Decarbonization",
-    "Adaptation and Resilience",
-    "Clinical Specialties or Treatment Modality"
-]);
-
-/* ---- FILTER TAXONOMY ---- */
-/* These define the sidebar checkbox groups.
-   Filters apply to Projects and Training & Capacity-Building Initiatives. */
-const FILTER_GROUPS = [
-    {
-        label: "Province / Territory",
-        field: "province",
-        values: [
-            "Alberta",
-            "British Columbia",
-            "Manitoba",
-            "New Brunswick",
-            "Newfoundland and Labrador",
-            "Nova Scotia",
-            "Ontario",
-            "Prince Edward Island",
-            "Quebec",
-            "Saskatchewan"
-        ]
-    },
-    {
-        label: "Sustainability Principles / Opportunity Areas",
-        field: "sustainabilityPrinciples",
-        values: SUSTAINABILITY_CATEGORIES
-    }
-];
-
 let REGULAR_PROJECTS = [];
 let INITIATIVES = [];
+let SUSTAINABILITY_TAXONOMY = null;
+let searchQuery = "";
 
 let activeFilters = {
     province: new Set(),
-    sustainabilityPrinciples: new Set()
+    sustainabilityPrinciples: new Set(),
+    opportunityCategories: new Set(),
+    opportunityDetails: new Set()
 };
+
+function opportunityDetailToken(categoryKey, value) {
+    return JSON.stringify([categoryKey, value]);
+}
+
+function parseOpportunityDetailToken(token) {
+    try {
+        const parsed = JSON.parse(token);
+        return Array.isArray(parsed) && parsed.length === 2 ? parsed : [];
+    } catch (_error) {
+        return [];
+    }
+}
 
 function setProjectData(projects) {
     PROJECTS = projects.filter((project, index) => {
@@ -96,7 +40,7 @@ function setProjectData(projects) {
             project.title.trim() !== "";
 
         if (!isValidRecord) {
-            console.warn(`Skipping invalid project record at index ${index}.`);
+            console.warn("Skipping invalid project record at index " + index + ".");
         }
 
         return isValidRecord;
@@ -105,20 +49,47 @@ function setProjectData(projects) {
     INITIATIVES = PROJECTS.filter(project => project.type === "initiative");
 }
 
-async function loadProjectData() {
-    const response = await fetch("data/projects.json", { cache: "no-cache" });
+function previewModeEnabled() {
+    return new URLSearchParams(window.location.search).get("preview") === "1";
+}
+
+async function fetchJson(path, label) {
+    const response = await fetch(path, { cache: "no-cache" });
 
     if (!response.ok) {
-        throw new Error(`projects.json request failed with status ${response.status}`);
+        throw new Error(label + " request failed with status " + response.status);
     }
 
-    const projects = await response.json();
+    return response.json();
+}
+
+async function loadProjectData() {
+    const path = previewModeEnabled() ? "data/projects.preview.json" : "data/projects.json";
+    const projects = await fetchJson(path, path);
 
     if (!Array.isArray(projects)) {
-        throw new Error("projects.json must contain an array of project records");
+        throw new Error(path + " must contain an array of project records");
     }
 
     return projects;
+}
+
+async function loadSustainabilityTaxonomy() {
+    const taxonomy = await fetchJson(
+        "data/sustainability-taxonomy.json",
+        "sustainability taxonomy"
+    );
+
+    if (
+        !taxonomy ||
+        !taxonomy.principles ||
+        !Array.isArray(taxonomy.principles.values) ||
+        !Array.isArray(taxonomy.opportunities)
+    ) {
+        throw new Error("sustainability-taxonomy.json has an invalid structure");
+    }
+
+    return taxonomy;
 }
 
 function showProjectLoadError(error) {
@@ -146,56 +117,216 @@ function showProjectLoadError(error) {
     heading.textContent = "Project content could not be loaded";
 
     const message = document.createElement("p");
-    message.textContent = "Please refresh the page or check that data/projects.json is available.";
+    message.textContent = "Please refresh the page or check that the project data is available.";
 
     emptyState.append(icon, heading, message);
 }
 
+function setAccordionExpanded(button, panel, expanded) {
+    button.setAttribute("aria-expanded", expanded ? "true" : "false");
+    panel.hidden = !expanded;
+}
+
+function createAccordionSection(id, label) {
+    const section = document.createElement("section");
+    section.className = "filter-group";
+
+    const heading = document.createElement("h3");
+    heading.className = "filter-group-heading";
+
+    const toggle = document.createElement("button");
+    toggle.type = "button";
+    toggle.className = "filter-group-toggle";
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-controls", id);
+
+    const chevron = document.createElement("span");
+    chevron.className = "filter-chevron";
+    chevron.setAttribute("aria-hidden", "true");
+
+    const labelText = document.createElement("span");
+    labelText.className = "filter-group-label";
+    labelText.textContent = label;
+
+    const count = document.createElement("span");
+    count.className = "filter-group-count";
+    count.dataset.filterCountFor = id;
+    count.hidden = true;
+
+    toggle.append(chevron, labelText, count);
+    heading.appendChild(toggle);
+
+    const panel = document.createElement("div");
+    panel.id = id;
+    panel.className = "filter-group-panel";
+    panel.hidden = true;
+
+    toggle.addEventListener("click", () => {
+        setAccordionExpanded(toggle, panel, toggle.getAttribute("aria-expanded") !== "true");
+    });
+
+    section.append(heading, panel);
+    return { section, panel };
+}
+
+function createFilterCheckbox({ labelText, value, dataset, className = "" }) {
+    const label = document.createElement("label");
+    label.className = ["filter-checkbox-label", className].filter(Boolean).join(" ");
+
+    const input = document.createElement("input");
+    input.type = "checkbox";
+    input.className = "filter-checkbox";
+    input.value = value;
+
+    for (const [key, datasetValue] of Object.entries(dataset)) {
+        input.dataset[key] = datasetValue;
+    }
+
+    input.addEventListener("change", onFilterChange);
+
+    const text = document.createElement("span");
+    text.className = "filter-checkbox-text";
+    text.textContent = labelText;
+
+    label.append(input, text);
+    return label;
+}
+
+function buildStandardFilterPanel(panel, field, values) {
+    for (const value of values) {
+        panel.appendChild(
+            createFilterCheckbox({
+                labelText: value,
+                value,
+                dataset: { filterKind: "standard", field }
+            })
+        );
+    }
+}
+
+function buildOpportunityFilterPanel(panel) {
+    for (const category of SUSTAINABILITY_TAXONOMY.opportunities) {
+        const categorySection = document.createElement("div");
+        categorySection.className = "opportunity-filter-category";
+
+        const categoryRow = document.createElement("div");
+        categoryRow.className = "opportunity-filter-category-row";
+
+        const parentLabel = createFilterCheckbox({
+            labelText: category.label,
+            value: category.key,
+            dataset: {
+                filterKind: "opportunityCategory",
+                categoryKey: category.key
+            },
+            className: "opportunity-parent-label"
+        });
+
+        const childPanelId = "opportunity-" + category.key;
+        const childToggle = document.createElement("button");
+        childToggle.type = "button";
+        childToggle.className = "opportunity-category-toggle";
+        childToggle.setAttribute("aria-expanded", "false");
+        childToggle.setAttribute("aria-controls", childPanelId);
+        childToggle.setAttribute("aria-label", "Expand " + category.label + " opportunities");
+        childToggle.title = "Expand " + category.label + " opportunities";
+
+        const childChevron = document.createElement("span");
+        childChevron.className = "filter-chevron";
+        childChevron.setAttribute("aria-hidden", "true");
+        childToggle.appendChild(childChevron);
+
+        const childPanel = document.createElement("div");
+        childPanel.id = childPanelId;
+        childPanel.className = "opportunity-filter-children";
+        childPanel.hidden = true;
+
+        for (const value of category.values) {
+            childPanel.appendChild(
+                createFilterCheckbox({
+                    labelText: value,
+                    value,
+                    dataset: {
+                        filterKind: "opportunityDetail",
+                        categoryKey: category.key
+                    },
+                    className: "opportunity-child-label"
+                })
+            );
+        }
+
+        childToggle.addEventListener("click", () => {
+            const expanded = childToggle.getAttribute("aria-expanded") !== "true";
+            setAccordionExpanded(childToggle, childPanel, expanded);
+            childToggle.setAttribute(
+                "aria-label",
+                (expanded ? "Collapse " : "Expand ") + category.label + " opportunities"
+            );
+            childToggle.title =
+                (expanded ? "Collapse " : "Expand ") + category.label + " opportunities";
+        });
+
+        categoryRow.append(parentLabel, childToggle);
+        categorySection.append(categoryRow, childPanel);
+        panel.appendChild(categorySection);
+    }
+}
+
 function buildFilters() {
     const sidebar = document.getElementById("filterSidebar");
-    if (!sidebar) return;
+    if (!sidebar || !SUSTAINABILITY_TAXONOMY) return;
 
     sidebar.innerHTML = "";
 
-    FILTER_GROUPS.forEach(group => {
-        const section = document.createElement("div");
-        section.className = "filter-group";
+    const provinces = [...new Set(
+        PROJECTS.map(project => String(project.province || "").trim()).filter(Boolean)
+    )].sort((a, b) => a.localeCompare(b));
 
-        const heading = document.createElement("h3");
-        heading.className = "filter-group-heading";
-        heading.textContent = group.label;
-        section.appendChild(heading);
+    const provinceGroup = createAccordionSection("province-filter-panel", "Province / Territory");
+    buildStandardFilterPanel(provinceGroup.panel, "province", provinces);
 
-        group.values.forEach(value => {
-            const label = document.createElement("label");
-            label.className = "filter-checkbox-label";
+    const principlesGroup = createAccordionSection(
+        "principles-filter-panel",
+        "Sustainability Principles"
+    );
+    buildStandardFilterPanel(
+        principlesGroup.panel,
+        "sustainabilityPrinciples",
+        SUSTAINABILITY_TAXONOMY.principles.values
+    );
 
-            const input = document.createElement("input");
-            input.type = "checkbox";
-            input.className = "filter-checkbox";
-            input.value = value;
-            input.dataset.field = group.field;
-            input.addEventListener("change", onFilterChange);
+    const opportunitiesGroup = createAccordionSection(
+        "opportunities-filter-panel",
+        "Sustainability Opportunities"
+    );
+    buildOpportunityFilterPanel(opportunitiesGroup.panel);
 
-            label.appendChild(input);
-            label.appendChild(document.createTextNode(" " + value));
-            section.appendChild(label);
-        });
-
-        sidebar.appendChild(section);
-    });
+    sidebar.append(
+        provinceGroup.section,
+        principlesGroup.section,
+        opportunitiesGroup.section
+    );
 }
 
-function onFilterChange(e) {
-    const field = e.target.dataset.field;
-    const value = e.target.value;
+function onFilterChange(event) {
+    const input = event.currentTarget || event.target;
+    const kind = input.dataset.filterKind;
 
-    if (!activeFilters[field]) return;
-
-    if (e.target.checked) {
-        activeFilters[field].add(value);
+    if (kind === "standard") {
+        const values = activeFilters[input.dataset.field];
+        if (!values) return;
+        input.checked ? values.add(input.value) : values.delete(input.value);
+    } else if (kind === "opportunityCategory") {
+        input.checked
+            ? activeFilters.opportunityCategories.add(input.dataset.categoryKey)
+            : activeFilters.opportunityCategories.delete(input.dataset.categoryKey);
+    } else if (kind === "opportunityDetail") {
+        const token = opportunityDetailToken(input.dataset.categoryKey, input.value);
+        input.checked
+            ? activeFilters.opportunityDetails.add(token)
+            : activeFilters.opportunityDetails.delete(token);
     } else {
-        activeFilters[field].delete(value);
+        return;
     }
 
     renderProjects();
@@ -203,18 +334,113 @@ function onFilterChange(e) {
     updateActiveCount();
 }
 
-function projectMatchesFilters(project) {
-    const provinceFilters = activeFilters.province;
-    const principleFilters = activeFilters.sustainabilityPrinciples;
+function projectMatchesSearch(project) {
+    const query = searchQuery.trim().toLocaleLowerCase();
+    if (!query) return true;
 
-    if (provinceFilters.size > 0) {
-        if (!provinceFilters.has(project.province)) return false;
+    const opportunityValues = [];
+    const opportunityComments = [];
+    const opportunityCategoryLabels = [];
+    const projectOpportunities = project.sustainabilityOpportunities || {};
+    const projectOpportunityComments = project.sustainabilityOpportunityComments || {};
+
+    for (const category of SUSTAINABILITY_TAXONOMY?.opportunities || []) {
+        const values = projectOpportunities[category.key];
+        const comment = projectOpportunityComments[category.key];
+        const hasValues = Array.isArray(values) && values.length > 0;
+        const hasComment = comment !== null && comment !== undefined && String(comment).trim() !== "";
+
+        if (hasValues || hasComment) {
+            opportunityCategoryLabels.push(category.label);
+        }
+
+        if (hasValues) {
+            opportunityValues.push(...values);
+        }
+
+        if (hasComment) {
+            opportunityComments.push(comment);
+        }
     }
 
-    if (principleFilters.size > 0) {
-        const projectPrinciples = project.sustainabilityPrinciples || [];
-        const match = [...principleFilters].some(f => projectPrinciples.includes(f));
-        if (!match) return false;
+    const domainValues = (project.domainsOfQuality || []).flatMap(item => [
+        item && item.name,
+        item && item.explanation
+    ]);
+    const metricValues = Object.values(project.metrics || {}).flatMap(values =>
+        Array.isArray(values) ? values : []
+    );
+
+    const searchable = [
+        project.title,
+        project.description,
+        project.organization,
+        project.department,
+        project.province,
+        project.healthcareSetting,
+        project.stage,
+        project.initiativeStage,
+        project.toolkitApplication,
+        project.toolkitAudienceUptake,
+        project.mostValuableElements,
+        project.qiIntegrationComments,
+        project.cobenefit,
+        ...(project.sustainabilityPrinciples || []),
+        ...opportunityCategoryLabels,
+        ...opportunityValues,
+        ...opportunityComments,
+        ...domainValues,
+        ...metricValues
+    ]
+        .filter(value => value !== null && value !== undefined)
+        .join(" ")
+        .toLocaleLowerCase();
+
+    return searchable.includes(query);
+}
+
+function projectMatchesFilters(project) {
+    if (!projectMatchesSearch(project)) return false;
+
+    if (
+        activeFilters.province.size > 0 &&
+        !activeFilters.province.has(project.province)
+    ) {
+        return false;
+    }
+
+    if (activeFilters.sustainabilityPrinciples.size > 0) {
+        const projectPrinciples = Array.isArray(project.sustainabilityPrinciples)
+            ? project.sustainabilityPrinciples
+            : [];
+        const matchesPrinciple = [...activeFilters.sustainabilityPrinciples].some(value =>
+            projectPrinciples.includes(value)
+        );
+        if (!matchesPrinciple) return false;
+    }
+
+    if (
+        activeFilters.opportunityCategories.size > 0 ||
+        activeFilters.opportunityDetails.size > 0
+    ) {
+        const projectOpportunities =
+            project.sustainabilityOpportunities &&
+            typeof project.sustainabilityOpportunities === "object" &&
+            !Array.isArray(project.sustainabilityOpportunities)
+                ? project.sustainabilityOpportunities
+                : {};
+
+        const matchesParent = [...activeFilters.opportunityCategories].some(categoryKey => {
+            const values = projectOpportunities[categoryKey];
+            return Array.isArray(values) && values.length > 0;
+        });
+        const matchesChild = [...activeFilters.opportunityDetails].some(token => {
+            const [categoryKey, value] = parseOpportunityDetailToken(token);
+            const values = projectOpportunities[categoryKey];
+            return Array.isArray(values) && values.includes(value);
+        });
+
+        if (!matchesParent && !matchesChild) return false;
     }
 
     return true;
@@ -227,7 +453,6 @@ function renderProjects() {
     if (!grid) return;
 
     const visibleProjects = REGULAR_PROJECTS.filter(projectMatchesFilters);
-
     grid.innerHTML = "";
 
     if (visibleProjects.length === 0) {
@@ -240,7 +465,7 @@ function renderProjects() {
     }
 
     if (countEl) {
-        countEl.textContent = `${visibleProjects.length} of ${REGULAR_PROJECTS.length}`;
+        countEl.textContent = visibleProjects.length + " of " + REGULAR_PROJECTS.length;
     }
 }
 
@@ -250,7 +475,6 @@ function renderInitiatives() {
     if (!grid) return;
 
     const visibleInitiatives = INITIATIVES.filter(projectMatchesFilters);
-
     grid.innerHTML = "";
 
     if (section) {
@@ -261,6 +485,7 @@ function renderInitiatives() {
         grid.appendChild(buildTile(initiative, index));
     });
 }
+
 function getStageClass(stage) {
     if (!stage) return "stage-unknown";
 
@@ -554,6 +779,17 @@ function formatToolkitResources(value) {
  Everything else in script.js stays the same.
  ========================================= */
 
+function buildPrincipleTagsHTML(principles, className = "") {
+    return (Array.isArray(principles) ? principles : [])
+        .filter(hasText)
+        .map(tag => {
+            const cleanTag = String(tag).trim();
+            const classes = ["tag", className].filter(Boolean).join(" ");
+            return `<span class="${classes}" data-principle="${escapeHTML(cleanTag)}">${escapeHTML(cleanTag)}</span>`;
+        })
+        .join("");
+}
+
 function buildTile(project, index) {
     const article = document.createElement("article");
     const isInitiative = project.type === "initiative";
@@ -822,6 +1058,42 @@ function buildDetailItems(items) {
         .join("");
 }
 
+function buildSustainabilityOpportunityItems(project) {
+    if (!SUSTAINABILITY_TAXONOMY) return "";
+
+    const opportunities = project.sustainabilityOpportunities || {};
+    const comments = project.sustainabilityOpportunityComments || {};
+
+    return SUSTAINABILITY_TAXONOMY.opportunities
+        .map(category => {
+            const values = Array.isArray(opportunities[category.key])
+                ? opportunities[category.key].filter(hasText)
+                : [];
+            const hasComment = hasText(comments[category.key]);
+            if (values.length === 0 && !hasComment) return "";
+
+            const commentHTML = hasComment
+                ? `<p class="opportunity-comment">${textWithLineBreaks(comments[category.key])}</p>`
+                : "";
+            const valuesHTML = values.length > 0
+                ? `<div class="opportunity-selected">
+                    <div class="opportunity-chip-row">
+                      ${values.map(value => `<span class="opportunity-chip">${escapeHTML(String(value).trim())}</span>`).join("")}
+                    </div>
+                  </div>`
+                : "";
+
+            return `
+              <div class="detail-item opportunity-detail-item">
+                <span class="detail-item-name">${escapeHTML(category.label)}</span>
+                ${commentHTML}
+                ${valuesHTML}
+              </div>
+            `;
+        })
+        .join("");
+}
+
 function buildMetricColumn(label, modifier, metrics) {
     if (!Array.isArray(metrics)) return "";
 
@@ -863,20 +1135,12 @@ function buildModalHTML(p) {
     `;
     }
 
-    const principleTagsHTML = (Array.isArray(p.sustainabilityPrinciples)
-        ? p.sustainabilityPrinciples
-        : [])
-        .filter(hasText)
-        .map(tag => {
-            const cleanTag = String(tag).trim();
-            return `<span class="tag tag--teal" data-principle="${escapeHTML(cleanTag)}">${escapeHTML(cleanTag)}</span>`;
-        })
-        .join("");
+    const principleTagsHTML = buildPrincipleTagsHTML(p.sustainabilityPrinciples, "tag--teal");
     const principlesSection = principleTagsHTML
         ? buildModalSection("Sustainability Principles", `<div class="tag-row">${principleTagsHTML}</div>`)
         : "";
 
-    const opportunitiesHTML = buildDetailItems(p.sustainabilityOpportunities);
+    const opportunitiesHTML = buildSustainabilityOpportunityItems(p);
     const opportunitiesSection = opportunitiesHTML
         ? buildModalSection("Sustainability Opportunities", `<div class="detail-list">${opportunitiesHTML}</div>`)
         : "";
@@ -921,7 +1185,9 @@ function buildModalHTML(p) {
 function updateActiveCount() {
     const total =
         activeFilters.province.size +
-        activeFilters.sustainabilityPrinciples.size;
+        activeFilters.sustainabilityPrinciples.size +
+        activeFilters.opportunityCategories.size +
+        activeFilters.opportunityDetails.size;
 
     const badge = document.getElementById("filterBadge");
     const clearBtn = document.getElementById("clearFilters");
@@ -938,15 +1204,66 @@ function updateActiveCount() {
         sidebarToggle.setAttribute("aria-expanded",
             document.body.classList.contains("sidebar-active") ? "true" : "false");
     }
+
+    updateFilterSectionCount("province-filter-panel", activeFilters.province.size);
+    updateFilterSectionCount(
+        "principles-filter-panel",
+        activeFilters.sustainabilityPrinciples.size
+    );
+    updateFilterSectionCount(
+        "opportunities-filter-panel",
+        activeFilters.opportunityCategories.size + activeFilters.opportunityDetails.size
+    );
+}
+
+function updateFilterSectionCount(panelId, count) {
+    const countElement = document.querySelector?.(
+        `[data-filter-count-for="${panelId}"]`
+    );
+    if (!countElement) return;
+
+    countElement.textContent = String(count);
+    countElement.hidden = count === 0;
+}
+
+function updateSearchClearButton() {
+    const clearButton = document.getElementById("clearSearch");
+    if (clearButton) clearButton.hidden = searchQuery === "";
+}
+
+function onSearchInput(event) {
+    searchQuery = String(event.target.value || "").trimStart();
+    updateSearchClearButton();
+    renderProjects();
+    renderInitiatives();
+}
+
+function clearSearch() {
+    searchQuery = "";
+    const searchInput = document.getElementById("projectSearch");
+    if (searchInput) searchInput.value = "";
+    updateSearchClearButton();
+    renderProjects();
+    renderInitiatives();
 }
 
 function clearAllFilters() {
     activeFilters.province.clear();
     activeFilters.sustainabilityPrinciples.clear();
+    activeFilters.opportunityCategories.clear();
+    activeFilters.opportunityDetails.clear();
     document.querySelectorAll(".filter-checkbox").forEach(cb => { cb.checked = false; });
     renderProjects();
     renderInitiatives();
     updateActiveCount();
+}
+
+function clearSearchAndFilters() {
+    searchQuery = "";
+    const searchInput = document.getElementById("projectSearch");
+    if (searchInput) searchInput.value = "";
+    updateSearchClearButton();
+    clearAllFilters();
 }
 
 function setSidebarOpen(isOpen) {
@@ -982,7 +1299,9 @@ function bindGalleryEvents() {
     });
 
     document.getElementById("clearFilters")?.addEventListener("click", clearAllFilters);
-    document.getElementById("clearFiltersEmpty")?.addEventListener("click", clearAllFilters);
+    document.getElementById("clearAllEmpty")?.addEventListener("click", clearSearchAndFilters);
+    document.getElementById("projectSearch")?.addEventListener("input", onSearchInput);
+    document.getElementById("clearSearch")?.addEventListener("click", clearSearch);
 
     document.getElementById("sidebarToggle")?.addEventListener("click", toggleSidebar);
     document.getElementById("sidebarClose")?.addEventListener("click", closeSidebar);
@@ -999,7 +1318,11 @@ function bindGalleryEvents() {
 
 async function initializeGallery() {
     try {
-        const projects = await loadProjectData();
+        const [projects, taxonomy] = await Promise.all([
+            loadProjectData(),
+            loadSustainabilityTaxonomy()
+        ]);
+        SUSTAINABILITY_TAXONOMY = taxonomy;
         setProjectData(projects);
 
         buildFilters();

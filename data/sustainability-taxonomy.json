@@ -1,0 +1,89 @@
+{
+  "principles": {
+    "label": "Sustainability Principles",
+    "column": "Sustainability Principles",
+    "values": [
+      "Prevention",
+      "Stewardship / Appropriateness",
+      "Decarbonization / Depollution"
+    ],
+    "aliases": {
+      "Decarbonization / Depoluttion": "Decarbonization / Depollution"
+    }
+  },
+  "opportunities": [
+    {
+      "key": "prevention",
+      "label": "Prevention",
+      "column": "Opportunity - Prevention",
+      "commentsColumn": "Prevention - Comments",
+      "values": [
+        "Upstream Determinants of Health",
+        "Health Promotion / Primary Prevention",
+        "Screening / Early Detection",
+        "Avoiding Complications of Care",
+        "Optimal Disease Management"
+      ]
+    },
+    {
+      "key": "stewardshipAppropriateness",
+      "label": "Stewardship / Appropriateness",
+      "column": "Opportunity - Stewardship / Appropriateness",
+      "commentsColumn": "Stewardship Comments",
+      "values": [
+        "Avoid Unnecessary Diagnostics",
+        "Avoid Unnecessary Treatments",
+        "Avoid Unnecessary Hospital-based Care",
+        "Minimize Delays in Care"
+      ]
+    },
+    {
+      "key": "mitigationDecarbonization",
+      "label": "Mitigation / Decarbonization",
+      "column": "Opportunity - Mitigation / Decarbonization",
+      "commentsColumn": "Mitigation / Decarbonization - comments",
+      "values": [
+        "Care coordination",
+        "Consumables",
+        "Waste management",
+        "Procurement",
+        "Energy",
+        "Food",
+        "Travel and Transportation",
+        "Water"
+      ]
+    },
+    {
+      "key": "climateResilienceAdaptation",
+      "label": "Climate resilience and adaptation",
+      "column": "Opportunity - Climate resilience and adaptation",
+      "commentsColumn": "Climate resilience and adaptation - Comments",
+      "values": [
+        "Healthcare delivery resilience",
+        "Provider resilience",
+        "Patient resilience"
+      ]
+    },
+    {
+      "key": "clinicalSpecialtyTreatmentModality",
+      "label": "Clinical specialty / treatment modality",
+      "column": "Opp - Clinical specialty / treatment modality",
+      "commentsColumn": "Clinical specialty or treatment modality - Comment",
+      "values": [
+        "Inhalers",
+        "Perioperative Care",
+        "Primary Care",
+        "Kidney Care",
+        "Radiology",
+        "Occupational Therapy",
+        "Medications & Pharmacy",
+        "Anesthetic Gases",
+        "Clinical Laboratory",
+        "Emergency Room",
+        "Dentistry",
+        "Palliative Care",
+        "Other Clinical Specialty"
+      ]
+    }
+  ]
+}

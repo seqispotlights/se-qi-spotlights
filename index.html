@@ -111,15 +111,35 @@
                         <span class="gallery-heading-count" id="projectCount"></span>
                     </div>
 
-                    <a href="#dashboard" class="btn-jump-to-dashboard" aria-label="Jump to dashboard">
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                            <rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5" />
-                            <rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5" />
-                            <rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5" />
-                            <rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5" />
-                        </svg>
-                        View Dashboard
-                    </a>
+                    <div class="gallery-controls">
+                        <div class="gallery-search">
+                            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
+                                <path d="m20 20-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                            </svg>
+                            <label class="sr-only" for="projectSearch">Search by keyword</label>
+                             <input id="projectSearch"
+                                    type="search"
+                                   placeholder="Search by keyword..."
+                                    autocomplete="off" />
+                            <button class="btn-clear-search"
+                                    id="clearSearch"
+                                    type="button"
+                                    aria-label="Clear search"
+                                    title="Clear search"
+                                    hidden>&times;</button>
+                        </div>
+
+                        <a href="#dashboard" class="btn-jump-to-dashboard" aria-label="Jump to dashboard">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                                <rect x="1" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5" />
+                                <rect x="8" y="1" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5" />
+                                <rect x="1" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5" />
+                                <rect x="8" y="8" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.5" />
+                            </svg>
+                            View Dashboard
+                        </a>
+                    </div>
                 </div>
 
                 <div class="project-grid" id="projectGrid" role="list" aria-label="Project gallery">
@@ -128,9 +148,9 @@
 
                 <div class="empty-state" id="emptyState" aria-live="polite">
                     <div class="empty-icon">Search</div>
-                    <h3>No projects match these filters</h3>
-                    <p>Try removing some filters to see more projects.</p>
-                    <button class="btn-reset" id="clearFiltersEmpty">Clear Filters</button>
+                    <h3>No spotlights match</h3>
+                    <p>Try adjusting your search or filters.</p>
+                    <button class="btn-reset" id="clearAllEmpty">Reset Search and Filters</button>
                 </div>
             </section>
 
@@ -193,6 +213,10 @@
             </div>
         </div>
     </section>
+
+    <footer class="site-credit">
+        Created and reviewed by Anya Chadha, Arianna Cruz, Sreya Ambrose
+    </footer>
 
     <!-- ===== MODAL ===== -->
     <div class="modal-overlay"

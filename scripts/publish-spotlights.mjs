@@ -6,12 +6,12 @@ import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import {
-  APPROVED_SUSTAINABILITY_CATEGORIES,
   COMMON_COLUMN_TITLES,
   DEFAULT_IMAGES_DIRECTORY,
   PUBLISHED_STATUS,
   READY_TO_PUBLISH_STATUS,
   SMARTSHEET_API_BASE,
+  SUSTAINABILITY_TAXONOMY,
   ValidationError,
   buildCaseSensitiveImageFilenameSet,
   buildColumnLookup,
@@ -509,7 +509,10 @@ export function assignMissingReadyRecordIds(
 
 export function validateGeneratedWebsiteRecords(records) {
   const errors = [];
-  const approvedCategories = new Set(APPROVED_SUSTAINABILITY_CATEGORIES);
+  const approvedPrinciples = new Set(SUSTAINABILITY_TAXONOMY.principles.values);
+  const opportunityDefinitions = new Map(
+    SUSTAINABILITY_TAXONOMY.opportunities.map(category => [category.key, category])
+  );
 
   function inspectValue(value, recordId, path) {
     if (value === null || value === undefined) {
@@ -538,13 +541,62 @@ export function validateGeneratedWebsiteRecords(records) {
     const recordId = trimText(record?.id) || "<missing>";
     inspectValue(record, recordId, "record");
 
-    const categories = [
-      ...(record?.sustainabilityPrinciples || []),
-      ...(record?.sustainabilityOpportunities || []).map(item => item?.name)
-    ];
-    for (const category of categories) {
-      if (!approvedCategories.has(category)) {
-        errors.push(makeRecordError(recordId, `Unapproved sustainability category: ${category}`));
+    if (!Array.isArray(record?.sustainabilityPrinciples)) {
+      errors.push(makeRecordError(recordId, "sustainabilityPrinciples must be an array"));
+    } else {
+      for (const principle of record.sustainabilityPrinciples) {
+        if (!approvedPrinciples.has(principle)) {
+          errors.push(makeRecordError(recordId, `Unapproved sustainability principle: ${principle}`));
+        }
+      }
+    }
+
+    const opportunities = record?.sustainabilityOpportunities;
+    if (!opportunities || typeof opportunities !== "object" || Array.isArray(opportunities)) {
+      errors.push(makeRecordError(recordId, "sustainabilityOpportunities must be an object"));
+    } else {
+      for (const key of Object.keys(opportunities)) {
+        if (!opportunityDefinitions.has(key)) {
+          errors.push(makeRecordError(recordId, `Unknown sustainability opportunity key: ${key}`));
+        }
+      }
+
+      for (const [key, definition] of opportunityDefinitions) {
+        const values = opportunities[key];
+        if (!Array.isArray(values)) {
+          errors.push(makeRecordError(recordId, `sustainabilityOpportunities.${key} must be an array`));
+          continue;
+        }
+
+        const approvedValues = new Set(definition.values);
+        for (const value of values) {
+          if (!approvedValues.has(value)) {
+            errors.push(
+              makeRecordError(recordId, `Unapproved ${definition.label} opportunity: ${value}`)
+            );
+          }
+        }
+      }
+    }
+
+    const comments = record?.sustainabilityOpportunityComments;
+    if (!comments || typeof comments !== "object" || Array.isArray(comments)) {
+      errors.push(
+        makeRecordError(recordId, "sustainabilityOpportunityComments must be an object")
+      );
+    } else {
+      for (const key of Object.keys(comments)) {
+        if (!opportunityDefinitions.has(key)) {
+          errors.push(makeRecordError(recordId, `Unknown sustainability comment key: ${key}`));
+        }
+      }
+
+      for (const key of opportunityDefinitions.keys()) {
+        if (typeof comments[key] !== "string") {
+          errors.push(
+            makeRecordError(recordId, `sustainabilityOpportunityComments.${key} must be a string`)
+          );
+        }
       }
     }
   }
