@@ -28,8 +28,8 @@
       ],
       "mitigationDecarbonization": [
         "Consumables",
-        "Travel and Transportation",
-        "Waste management"
+        "Waste management",
+        "Travel and Transportation"
       ],
       "climateResilienceAdaptation": [
         "Patient resilience"
@@ -94,9 +94,9 @@
       "prevention": [],
       "stewardshipAppropriateness": [],
       "mitigationDecarbonization": [
+        "Waste management",
         "Energy",
-        "Travel and Transportation",
-        "Waste management"
+        "Travel and Transportation"
       ],
       "climateResilienceAdaptation": [],
       "clinicalSpecialtyTreatmentModality": [
@@ -136,9 +136,9 @@
   {
     "id": "SEQI-0003",
     "type": "initiative",
-    "title": "SE-QI Toolkit as an Engagement tool",
+    "title": "Northern Health Engagement tool",
     "photo": "images/seqi-0003.png",
-    "photoAlt": "SE-QI Toolkit as an Engagement tool",
+    "photoAlt": "Northern Health Engagement tool",
     "province": "British Columbia",
     "publishedOn": "14 July 2026",
     "contactName": "John Short",
@@ -372,9 +372,9 @@
   {
     "id": "SEQI-0007",
     "type": "initiative",
-    "title": "Integrating the SE-QI Toolkit in ONSQIN",
+    "title": "Ontario Health's ONSQIN",
     "photo": "images/seqi-0007.webp",
-    "photoAlt": "Integrating the SE-QI Toolkit in ONSQIN",
+    "photoAlt": "Ontario Health's ONSQIN",
     "province": "Ontario",
     "publishedOn": "14 July 2026",
     "contactName": "Pierrette Price-Arsenault",
@@ -505,8 +505,8 @@
       ],
       "climateResilienceAdaptation": [],
       "clinicalSpecialtyTreatmentModality": [
-        "Medications & Pharmacy",
-        "Primary Care"
+        "Primary Care",
+        "Medications & Pharmacy"
       ]
     },
     "sustainabilityOpportunityComments": {
@@ -642,8 +642,8 @@
       "stewardshipAppropriateness": [],
       "mitigationDecarbonization": [
         "Care coordination",
-        "Energy",
-        "Waste management"
+        "Waste management",
+        "Energy"
       ],
       "climateResilienceAdaptation": [
         "Provider resilience"
