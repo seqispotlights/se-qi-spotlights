@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import { appendFile, copyFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, extname, join } from "node:path";
 import { tmpdir } from "node:os";
@@ -8,6 +9,7 @@ import { promisify } from "node:util";
 import {
   COMMON_COLUMN_TITLES,
   DEFAULT_IMAGES_DIRECTORY,
+  EXPECTED_COLUMN_TITLES,
   PUBLISHED_STATUS,
   READY_TO_PUBLISH_STATUS,
   SMARTSHEET_API_BASE,
@@ -1077,15 +1079,66 @@ function logSafeSummary(summary) {
   console.log(`Reused-image count: ${summary.reusedImageCount}`);
 }
 
+function maskIdentifier(value) {
+  const text = trimText(value);
+  if (!text) return "(blank)";
+
+  const suffix = text.slice(-6);
+  const digest = createHash("sha256").update(text).digest("hex").slice(0, 12);
+  return `length=${text.length}, suffix=${suffix}, sha256=${digest}`;
+}
+
+function quoteColumnTitle(title) {
+  const text = String(title ?? "");
+  const escaped = text
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/\r/g, "\\r")
+    .replace(/\n/g, "\\n")
+    .replace(/\t/g, "\\t");
+  const trimmed = trimText(text);
+  const whitespaceNote = text === trimmed ? "" : ` (trimmed: "${trimmed}")`;
+  return `"${escaped}"${whitespaceNote}`;
+}
+
+function logSmartsheetSchemaDiagnostics(sheet, configuredSheetId) {
+  const columns = Array.isArray(sheet?.columns) ? sheet.columns : [];
+  const exactTitles = new Set(columns.map(column => String(column.title ?? "")));
+  const trimmedTitles = new Set(columns.map(column => trimText(column.title)));
+  const missingColumns = EXPECTED_COLUMN_TITLES.filter(title => !trimmedTitles.has(title));
+  const exactMismatchColumns = EXPECTED_COLUMN_TITLES.filter(
+    title => trimmedTitles.has(title) && !exactTitles.has(title)
+  );
+
+  console.log("Smartsheet schema diagnostics:");
+  console.log(`- Sheet name: ${trimText(sheet?.name) || "(unnamed)"}`);
+  console.log(`- Configured SMARTSHEET_SHEET_ID: ${maskIdentifier(configuredSheetId)}`);
+  console.log(`- API sheet id: ${maskIdentifier(sheet?.id)}`);
+  console.log(`- API column count: ${columns.length}`);
+  console.log("- API column titles:");
+  columns.forEach((column, index) => {
+    console.log(`  ${String(index + 1).padStart(2, "0")}. ${quoteColumnTitle(column.title)}`);
+  });
+  console.log(
+    `- Missing expected columns after trimming: ${missingColumns.join(", ") || "(none)"}`
+  );
+  console.log(
+    `- Exact-name whitespace mismatches: ${exactMismatchColumns.join(", ") || "(none)"}`
+  );
+}
+
 async function writeGitHubOutput(name, value) {
   const outputPath = process.env.GITHUB_OUTPUT;
   if (!outputPath) return;
   await appendFile(outputPath, `${name}=${value}\n`, "utf8");
 }
 
-async function buildCurrentPublicationPlan(sheetId, accessToken) {
+async function buildCurrentPublicationPlan(sheetId, accessToken, options = {}) {
   const tempDirectory = await mkdtemp(join(tmpdir(), "seqi-publish-images-"));
   const sheet = await fetchSheet(sheetId, accessToken);
+  if (options.logSmartsheetSchema) {
+    logSmartsheetSchemaDiagnostics(sheet, sheetId);
+  }
   const currentSerialized = existsSync(PROJECTS_OUTPUT_PATH)
     ? await readFile(PROJECTS_OUTPUT_PATH, "utf8")
     : "[]\n";
@@ -1114,7 +1167,9 @@ async function runCheck() {
 
   const accessToken = requireEnv("SMARTSHEET_ACCESS_TOKEN");
   const sheetId = requireEnv("SMARTSHEET_SHEET_ID");
-  const { currentSerialized, plan } = await buildCurrentPublicationPlan(sheetId, accessToken);
+  const { currentSerialized, plan } = await buildCurrentPublicationPlan(sheetId, accessToken, {
+    logSmartsheetSchema: true
+  });
   const decision = detectPublicationWork(currentSerialized, plan);
 
   logSafeSummary(plan.summary);
