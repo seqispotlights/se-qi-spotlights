@@ -5,17 +5,6 @@ on:
   # schedule:
   #   - cron: "17 * * * *"
   workflow_dispatch:
-    inputs:
-      check_only:
-        description: "Run the Smartsheet publication queue check only"
-        required: false
-        default: false
-        type: boolean
-      repair_columns:
-        description: "Repair Smartsheet sustainability opportunity column titles before checking"
-        required: false
-        default: false
-        type: boolean
 
 permissions:
   actions: read
@@ -50,13 +39,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libheif-examples libheif-plugin-libde265
 
-      - name: Repair Smartsheet sustainability column titles
-        if: github.event.inputs.repair_columns == 'true'
-        env:
-          SMARTSHEET_ACCESS_TOKEN: ${{ secrets.SMARTSHEET_ACCESS_TOKEN }}
-          SMARTSHEET_SHEET_ID: ${{ secrets.SMARTSHEET_SHEET_ID }}
-        run: node scripts/publish-spotlights.mjs repair-columns
-
       - name: Check publication queue
         id: check
         env:
@@ -67,7 +49,7 @@ jobs:
   prepare:
     name: Generate and commit approved content
     needs: check_changes
-    if: needs.check_changes.outputs.should_publish == 'true' && github.event.inputs.check_only != 'true'
+    if: needs.check_changes.outputs.should_publish == 'true'
     runs-on: ubuntu-latest
     outputs:
       commit_sha: ${{ steps.revision.outputs.commit_sha }}
