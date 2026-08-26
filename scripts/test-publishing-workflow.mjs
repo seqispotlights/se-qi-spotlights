@@ -326,7 +326,7 @@ test("Phase 2B maps new multi-select sustainability fields and keeps dimensions 
               "Stewardship / Appropriateness\nDecarbonization / Depoluttion"
           },
           "Opportunity - Stewardship / Appropriateness":
-            "Avoid Unnecessary Hospital-based Care\nMinimize Delays in Care",
+            "Avoid Unnecessary Hospital-based Care, Minimize Delays in Care",
           "Stewardship Comments": "Synthetic stewardship opportunity",
           "Opportunity - Mitigation / Decarbonization": {
             objectValue: { values: ["Care coordination", "Waste management"] },
@@ -367,6 +367,51 @@ test("Phase 2B maps new multi-select sustainability fields and keeps dimensions 
   });
 });
 
+test("Phase 2B splits comma-delimited option values inside Smartsheet object arrays", async () => {
+  const imagesDirectory = await tempImages(["existing.jpg"]);
+  const result = generatePreviewRecords(
+    sheet([
+      projectRow({
+        cells: {
+          "Opportunity - Stewardship / Appropriateness": {
+            objectValue: {
+              values: ["Avoid Unnecessary Hospital-based Care, Minimize Delays in Care"]
+            },
+            displayValue: "Avoid Unnecessary Hospital-based Care, Minimize Delays in Care"
+          },
+          "Opportunity - Mitigation / Decarbonization": {
+            objectValue: {
+              values: ["Care coordination, Waste management", "Energy"]
+            },
+            displayValue: "Care coordination, Waste management\nEnergy"
+          },
+          "Opp - Clinical specialty / treatment modality": {
+            objectValue: {
+              values: ["Primary Care, Medications & Pharmacy"]
+            },
+            displayValue: "Primary Care, Medications & Pharmacy"
+          }
+        }
+      })
+    ]),
+    { imagesDirectory }
+  );
+
+  assert.deepEqual(result.records[0].sustainabilityOpportunities.stewardshipAppropriateness, [
+    "Avoid Unnecessary Hospital-based Care",
+    "Minimize Delays in Care"
+  ]);
+  assert.deepEqual(result.records[0].sustainabilityOpportunities.mitigationDecarbonization, [
+    "Care coordination",
+    "Waste management",
+    "Energy"
+  ]);
+  assert.deepEqual(result.records[0].sustainabilityOpportunities.clinicalSpecialtyTreatmentModality, [
+    "Primary Care",
+    "Medications & Pharmacy"
+  ]);
+});
+
 test("Phase 2B does not split comma-containing fallback values", async () => {
   const imagesDirectory = await tempImages(["existing.jpg"]);
 
@@ -376,7 +421,7 @@ test("Phase 2B does not split comma-containing fallback values", async () => {
         sheet([
           projectRow({
             preventionOpportunities:
-              "Screening / Early Detection, Avoiding Complications of Care"
+              "Screening / Early Detection, Avoiding Complications of Care, local context"
           })
         ]),
         { imagesDirectory }

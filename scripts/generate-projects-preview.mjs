@@ -265,36 +265,55 @@ function uniqueTrimmed(values) {
   return result;
 }
 
-function parseDelimitedValues(value) {
+function parseDelimitedValues(value, allowedOptions = []) {
   const text = trimText(value);
   if (!text) return [];
+
+  const optionSet = new Set(allowedOptions.map(trimText).filter(Boolean));
+  if (optionSet.size > 0 && text.includes(",")) {
+    const commaValues = text.split(/\s*,\s*/).map(trimText).filter(Boolean);
+    if (commaValues.length > 1 && commaValues.every(item => optionSet.has(item))) {
+      return uniqueTrimmed(commaValues);
+    }
+  }
 
   return uniqueTrimmed(text.split(/\r?\n/));
 }
 
-export function getMultiSelectValues(row, column) {
+function parseDelimitedValueList(values, allowedOptions = []) {
+  return uniqueTrimmed(values.flatMap(value => parseDelimitedValues(value, allowedOptions)));
+}
+
+export function getMultiSelectValues(row, column, allowedOptions = []) {
   const cell = getCell(row, column);
   if (!cell) return [];
+  const parseOptions =
+    Array.isArray(column?.options) && column.options.length > 0 ? column.options : allowedOptions;
 
   if (Array.isArray(cell.objectValue?.values)) {
-    return uniqueTrimmed(cell.objectValue.values);
+    return parseDelimitedValueList(cell.objectValue.values, parseOptions);
   }
 
   if (Array.isArray(cell.value)) {
-    return uniqueTrimmed(cell.value);
+    return parseDelimitedValueList(cell.value, parseOptions);
   }
 
   if (Array.isArray(cell.displayValue)) {
-    return uniqueTrimmed(cell.displayValue);
+    return parseDelimitedValueList(cell.displayValue, parseOptions);
   }
 
-  return parseDelimitedValues(cell.displayValue ?? cell.value ?? cell.objectValue?.value);
+  return parseDelimitedValues(
+    cell.displayValue ?? cell.value ?? cell.objectValue?.value,
+    parseOptions
+  );
 }
 
 function normalizeTaxonomyValues(row, column, definition) {
   const aliases = definition.aliases || {};
   const allowedValues = new Set(definition.values);
-  const values = getMultiSelectValues(row, column).map(value => aliases[value] || value);
+  const values = getMultiSelectValues(row, column, definition.values).map(
+    value => aliases[value] || value
+  );
   const unexpectedValues = values.filter(value => !allowedValues.has(value));
 
   if (unexpectedValues.length > 0) {
