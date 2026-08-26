@@ -472,6 +472,7 @@ function renderProjects() {
 function renderInitiatives() {
     const grid = document.getElementById("initiativeGrid");
     const section = document.getElementById("initiativesSection");
+    const countEl = document.getElementById("initiativeCount");
     if (!grid) return;
 
     const visibleInitiatives = INITIATIVES.filter(projectMatchesFilters);
@@ -484,6 +485,10 @@ function renderInitiatives() {
     visibleInitiatives.forEach((initiative, index) => {
         grid.appendChild(buildTile(initiative, index));
     });
+
+    if (countEl) {
+        countEl.textContent = visibleInitiatives.length + " of " + INITIATIVES.length;
+    }
 }
 
 function getStageClass(stage) {
@@ -830,7 +835,7 @@ function buildTile(project, index) {
     if (isInitiative) {
         const label = document.createElement("span");
         label.className = "tile-type-label";
-        label.textContent = "Training & Capacity-Building";
+        label.textContent = "Training & Capacity Building";
         footer.appendChild(label);
     }
 
@@ -1015,7 +1020,7 @@ function buildInfoItem(icon, label, value) {
 function buildProjectInfoPanel(p) {
     const stageValue = buildStageBadge(p.stage || p.initiativeStage);
     const thirdItem = p.type === "initiative"
-        ? buildInfoItem(INFO_PANEL_ICONS.hospital, "Initiative Type", "Training & Capacity-Building")
+        ? buildInfoItem(INFO_PANEL_ICONS.hospital, "Initiative Type", "Training & Capacity Building")
         : buildInfoItem(INFO_PANEL_ICONS.hospital, "Healthcare Setting", p.healthcareSetting);
 
     return `
