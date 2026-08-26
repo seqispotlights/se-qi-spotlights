@@ -731,6 +731,8 @@ export async function buildPublishPlan({
   );
   const rows = Array.isArray(effectiveSheet.rows) ? effectiveSheet.rows : [];
   const eligibleStatuses = [READY_TO_PUBLISH_STATUS, PUBLISHED_STATUS];
+  const { byId: existingRecordsById, imageOwnerByFilename } =
+    buildExistingRecordLookups(currentRecords);
   const readyRows = rows.filter(
     row =>
       getCellText(row, columnLookup.get(COMMON_COLUMN_TITLES.publicationStatus)) ===
@@ -743,10 +745,13 @@ export async function buildPublishPlan({
         columnLookup.get(COMMON_COLUMN_TITLES.publicationDate)
       );
       if (publicationDate) return undefined;
+      const recordId = rowIdentifier(row, columnLookup);
+      const existingRecord = existingRecordsById.get(recordId);
+      if (existingRecord?.publishedOn) return undefined;
 
       return {
         row,
-        recordId: rowIdentifier(row, columnLookup),
+        recordId,
         rowId: row.id,
         issue: "Website publication date is missing; row was not published."
       };
@@ -782,8 +787,6 @@ export async function buildPublishPlan({
     throw new PublishValidationError(errors);
   }
 
-  const { byId: existingRecordsById, imageOwnerByFilename } =
-    buildExistingRecordLookups(currentRecords);
   const existingImageFilenames = buildCaseSensitiveImageFilenameSet(imagesDirectory);
   const plannedImageOwners = new Map();
   const photoFilenameByRecordId = new Map();
@@ -799,7 +802,9 @@ export async function buildPublishPlan({
 
     try {
       const publicationDate = buildPublicationDateForRow(row, columnLookup, existingRecord, {
-        allowExistingFallback: status === PUBLISHED_STATUS
+        allowExistingFallback:
+          status === PUBLISHED_STATUS ||
+          (status === READY_TO_PUBLISH_STATUS && existingRecord !== undefined)
       });
       publishedOnByRecordId.set(recordId, publicationDate.publishedOn);
 

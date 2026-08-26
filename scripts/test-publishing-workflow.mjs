@@ -720,6 +720,57 @@ test("Do not publish to Ready republishes the same record ID without duplication
   assert.equal(republishPlan.writeBackRows[0].markPublished, true);
 });
 
+test("Existing Published record changed to Ready updates in place without a new publication date", async () => {
+  const imagesDirectory = await tempImages(["seqi-0052.jpg"]);
+  const originalPlan = await buildPublishPlan({
+    sheet: sheet([
+      projectRow({
+        recordId: "SEQI-0052",
+        rowId: 52,
+        status: PUBLISHED_STATUS,
+        photoFilename: "seqi-0052.jpg",
+        publicationDate: "2026-06-12",
+        title: "Original published title"
+      })
+    ]),
+    imagesDirectory,
+    tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0052"])
+  });
+  const republishPlan = await buildPublishPlan({
+    sheet: sheet([
+      projectRow({
+        recordId: "SEQI-0052",
+        rowId: 52,
+        status: READY_TO_PUBLISH_STATUS,
+        photoFilename: "seqi-0052.jpg",
+        publicationDate: "",
+        title: "Updated republished title"
+      })
+    ]),
+    currentRecords: originalPlan.records,
+    imagesDirectory,
+    tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0052"])
+  });
+
+  assert.equal(republishPlan.records.length, 1);
+  assert.equal(republishPlan.records[0].id, "SEQI-0052");
+  assert.equal(republishPlan.records[0].title, "Updated republished title");
+  assert.equal(republishPlan.records[0].publishedOn, "12 June 2026");
+  assert.equal(new Set(republishPlan.records.map(record => record.id)).size, 1);
+  assert.deepEqual(detectPublicationWork(originalPlan.serialized, republishPlan), {
+    shouldPublish: true,
+    galleryChanged: true,
+    hasReadyRows: true,
+    hasWriteBackRows: true
+  });
+  assert.equal(republishPlan.writeBackRows.length, 1);
+  assert.equal(republishPlan.writeBackRows[0].recordId, "SEQI-0052");
+  assert.equal(republishPlan.writeBackRows[0].recordIdWasBlank, false);
+  assert.equal(republishPlan.writeBackRows[0].markPublished, true);
+});
+
 test("Unchanged Published records produce no publication work", async () => {
   const imagesDirectory = await tempImages(["seqi-0052.jpg"]);
   const sourceSheet = sheet([
@@ -1233,7 +1284,7 @@ test("Phase 3 skips a new Ready row with a blank publication date", async () => 
   assert.equal(plan.summary.skippedMissingPublicationDateRows[0].recordId, "SEQI-0032");
 });
 
-test("Phase 3 skips a Ready row with a blank date without removing its live record", async () => {
+test("Phase 3 skips a Ready row without any reusable date and keeps its live record", async () => {
   const imagesDirectory = await tempImages(["seqi-0033.jpg"]);
   const currentRecord = {
     id: "SEQI-0033",
@@ -1242,7 +1293,7 @@ test("Phase 3 skips a Ready row with a blank date without removing its live reco
     photo: "images/seqi-0033.jpg",
     photoAlt: "Published before",
     province: "British Columbia",
-    publishedOn: "10 July 2026",
+    publishedOn: "",
     contactName: "Synthetic Respondent",
     email: "synthetic@example.test",
     organization: "Synthetic Organization",
