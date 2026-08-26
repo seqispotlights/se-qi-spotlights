@@ -5,6 +5,12 @@ on:
   # schedule:
   #   - cron: "17 * * * *"
   workflow_dispatch:
+    inputs:
+      check_only:
+        description: "Run the Smartsheet publication queue check only"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   actions: read
@@ -49,7 +55,7 @@ jobs:
   prepare:
     name: Generate and commit approved content
     needs: check_changes
-    if: needs.check_changes.outputs.should_publish == 'true'
+    if: needs.check_changes.outputs.should_publish == 'true' && github.event.inputs.check_only != 'true'
     runs-on: ubuntu-latest
     outputs:
       commit_sha: ${{ steps.revision.outputs.commit_sha }}
