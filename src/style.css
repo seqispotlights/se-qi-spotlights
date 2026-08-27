@@ -1096,15 +1096,6 @@ body.sidebar-active { overflow: hidden; }
   line-height: 1.7;
 }
 
-.dashboard-updated {
-  margin-top: 10px;
-  color: var(--gray-700);
-  font-family: 'Barlow', sans-serif;
-  font-size: .86rem;
-  font-weight: 700;
-  line-height: 1.35;
-}
-
 .btn-download-pdf {
   display: inline-flex;
   align-items: center;
