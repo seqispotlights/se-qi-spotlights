@@ -94,7 +94,7 @@ jobs:
         id: stage
         if: steps.prepare.outputs.should_publish == 'true'
         run: |
-          git add data/projects.json images
+          git add data/projects.json dashboard.pdf images
           git diff --check
           git diff --cached --check
 
@@ -105,7 +105,7 @@ jobs:
             exit 0
           fi
 
-          unexpected_files="$(printf '%s\n' "$staged_files" | grep -Ev '^(data/projects\.json|images/[^/]+)$' || true)"
+          unexpected_files="$(printf '%s\n' "$staged_files" | grep -Ev '^(data/projects\.json|dashboard\.pdf|images/[^/]+)$' || true)"
           if [ -n "$unexpected_files" ]; then
             echo "Unexpected staged file(s):"
             printf '%s\n' "$unexpected_files"
@@ -139,14 +139,14 @@ jobs:
   build_pages:
     name: Build GitHub Pages artifact
     needs: [check_changes, prepare]
-    if: needs.check_changes.outputs.should_publish == 'true' && needs.prepare.outputs.should_publish == 'true'
+    if: always() && needs.check_changes.result == 'success' && (needs.prepare.result == 'success' || needs.prepare.result == 'skipped')
     runs-on: ubuntu-latest
 
     steps:
       - name: Check out publication revision
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.prepare.outputs.commit_sha }}
+          ref: ${{ needs.prepare.outputs.commit_sha || github.sha }}
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
@@ -165,7 +165,7 @@ jobs:
   deploy_pages:
     name: Deploy GitHub Pages
     needs: [check_changes, prepare, build_pages]
-    if: needs.check_changes.outputs.should_publish == 'true' && needs.prepare.outputs.should_publish == 'true'
+    if: always() && needs.check_changes.result == 'success' && (needs.prepare.result == 'success' || needs.prepare.result == 'skipped') && needs.build_pages.result == 'success'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
