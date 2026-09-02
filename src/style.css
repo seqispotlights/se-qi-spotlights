@@ -472,9 +472,13 @@ ul { list-style: none; padding: 0; }
 }
 
 .opportunity-parent-label {
+  display: block;
   min-width: 0;
+  padding: 6px 6px;
+  font-size: .83rem;
   font-weight: 600;
   color: var(--navy);
+  line-height: 1.4;
 }
 
 .opportunity-category-toggle {

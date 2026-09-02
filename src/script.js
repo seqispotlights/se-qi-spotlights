@@ -212,15 +212,9 @@ function buildOpportunityFilterPanel(panel) {
         const categoryRow = document.createElement("div");
         categoryRow.className = "opportunity-filter-category-row";
 
-        const parentLabel = createFilterCheckbox({
-            labelText: category.label,
-            value: category.key,
-            dataset: {
-                filterKind: "opportunityCategory",
-                categoryKey: category.key
-            },
-            className: "opportunity-parent-label"
-        });
+        const parentLabel = document.createElement("span");
+        parentLabel.className = "opportunity-parent-label";
+        parentLabel.textContent = category.label;
 
         const childPanelId = "opportunity-" + category.key;
         const childToggle = document.createElement("button");
