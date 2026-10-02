@@ -806,5 +806,72 @@
     "mostValuableElements": "The identification of key SE-QI principles and the Toolkit’s structured, guided approach are particularly valuable, as they help teams make clear connections between quality improvement and sustainability. The inclusion of practical calculators within the Toolkit’s resources is also valuable, as it makes it easier for teams to quantify relevant environmental and other sustainability impacts.",
     "qiIntegration": "Yes",
     "qiIntegrationComments": "The SE-QI Toolkit is already embedded at the centre of the Working Group’s activities, providing participating organizations with a shared foundation, common language, and practical tools to integrate sustainability into quality improvement."
+  },
+  {
+    "id": "SEQI-0022",
+    "type": "project",
+    "title": "Coastal Complex Outpatient Antimicrobial Therapy (COpAT) Program - LGH Pilot",
+    "photo": "images/seqi-0022.jpg",
+    "photoAlt": "Coastal Complex Outpatient Antimicrobial Therapy (COpAT) Program - LGH Pilot",
+    "province": "British Columbia",
+    "publishedOn": "2 October 2026",
+    "contactName": "Jane Lin",
+    "email": "jane.lin@vch.ca",
+    "organization": "Vancouver Coastal Health",
+    "department": "ASPIRES Antimicrobial Stewardship",
+    "stage": "Work in progress",
+    "healthcareSetting": "Outpatient Acute Care",
+    "description": "Lions Gate Hospital (LGH) will launch the Complex Outpatient Antimicrobial Therapy (COpAT) program, which integrates the existing Community IV Program (CPIV) with a new Community PO (oral) Program pilot (CPOP). Led by Infectious Disease specialists and supported by Medical Day Care staff and a clinical pharmacist, COpAT will provide specialist oversight and routine monitoring for eligible North Shore residents receiving either IV or evidence-supported oral antimicrobial therapy for complex infections.",
+    "cobenefit": "The carbon footprint estimation examples and resources were particularly useful, making the process of capturing a project's environmental impact feel less intimidating and more achievable through high-level estimates based on the provided references and calculations.",
+    "sustainabilityPrinciples": [
+      "Stewardship / Appropriateness"
+    ],
+    "sustainabilityOpportunities": {
+      "prevention": [
+        "Avoiding Complications of Care"
+      ],
+      "stewardshipAppropriateness": [],
+      "mitigationDecarbonization": [],
+      "climateResilienceAdaptation": [
+        "Healthcare delivery resilience",
+        "Patient resilience"
+      ],
+      "clinicalSpecialtyTreatmentModality": [
+        "Other Clinical Specialty"
+      ]
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "CPOP provides a non-invasive, needle-free experience that eliminates risks associated with vascular access (e.g., infections, thrombosis) and improves daily autonomy.",
+      "stewardshipAppropriateness": "",
+      "mitigationDecarbonization": "",
+      "climateResilienceAdaptation": "CPOP optimizes clinic capacity and resource allocation by reducing the need for PICC line insertions, maintenance appointments, and sterile compounding workload. This further provides significant cost savings on PICC supplies and IV medications. It further eliminates patient visits to ambulatory clinic for line-care.",
+      "clinicalSpecialtyTreatmentModality": "Infectious Diseases, Antimicrobial Stewardship"
+    },
+    "metrics": {
+      "environmental": [
+        "Environmental impact data will be collected using a simulation-based approach, with a UBC Pharmacy Directed Studies student weighing clean plastic compounding and oral packaging supplies associated with commonly prescribed antimicrobials in the Community IV (CIVP) and Community PO (CPOP) streams. Pending approval, materials used for PICC insertion and clinic care will also be measured. Plastic waste mass will then be scaled to program volumes to estimate the potential waste reduction associated with oral therapy."
+      ],
+      "activity": [
+        "Estimation of number of trips to ambulatory clinics eliminated by placing a patient in CPOP instead of CIVP."
+      ]
+    },
+    "domainsOfQuality": [
+      {
+        "name": "Efficiency",
+        "explanation": "Emerging medical evidence now supports oral (PO) therapy for many complex infections traditionally treated with IV. The CPOP pilot provides the formal framework clinicians need to apply this evidence, ensuring patients receive the same specialist oversight and monitoring as those on IV therapy."
+      },
+      {
+        "name": "Safety",
+        "explanation": "CPOP provides a non-invasive, needle-free treatment option that eliminates risks associated with vascular access, including catheter-related infections and thrombosis."
+      },
+      {
+        "name": "Timeliness",
+        "explanation": "Arranging CIVP therapy can take several days, potentially prolonging hospital length of stay. For eligible patients, CPOP may enable earlier transition to outpatient treatment, reducing hospital length of stay and associated risks of hospitalization."
+      },
+      {
+        "name": "Patient-Centredness / Respect",
+        "explanation": "For those patients who prefer to receive treatment orally, the CPOP program provides the opportunity to match the patient's preference should they be deemed eligible."
+      }
+    ]
   }
 ]
