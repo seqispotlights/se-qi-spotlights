@@ -544,7 +544,8 @@ function validateCommonRequiredFields(row, columnLookup, errors, options = {}) {
   const recordId = rowIdentifier(row, columnLookup);
   const missingChecks = [
     [COMMON_COLUMN_TITLES.recordId, "Website record ID"],
-    [COMMON_COLUMN_TITLES.toolkitUse, "Intended toolkit use"]
+    [COMMON_COLUMN_TITLES.toolkitUse, "Intended toolkit use"],
+    [COMMON_COLUMN_TITLES.organization, "Organization"]
   ];
 
   for (const [columnTitle, fieldName] of missingChecks) {

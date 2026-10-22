@@ -285,7 +285,7 @@ async function buildUnpublishScenario() {
   };
 }
 
-test("Phase 2B mapping validates ID, type, title, description, stage, and photo", async () => {
+test("Phase 2B mapping validates ID, type, title, description, stage, organization, and photo", async () => {
   const imagesDirectory = await tempImages(["existing.jpg"]);
   const result = generatePreviewRecords(sheet([projectRow()]), {
     imagesDirectory
@@ -309,6 +309,25 @@ test("Phase 2B mapping validates ID, type, title, description, stage, and photo"
   assert.equal(
     result.records[0].sustainabilityOpportunityComments.prevention,
     "Synthetic prevention opportunity"
+  );
+});
+
+test("Phase 2B rejects a blank required organization", async () => {
+  const imagesDirectory = await tempImages(["existing.jpg"]);
+
+  assert.throws(
+    () =>
+      generatePreviewRecords(
+        sheet([
+          projectRow({
+            cells: { [COMMON_COLUMN_TITLES.organization]: "" }
+          })
+        ]),
+        { imagesDirectory }
+      ),
+    error =>
+      error instanceof ValidationError &&
+      JSON.stringify(error.errors).includes("Missing required field: Organization")
   );
 });
 
@@ -985,7 +1004,6 @@ test("Phase 3 keeps optional blank fields render-safe", async () => {
       projectRow({
         recordId: "SEQI-0023",
         cells: {
-          [COMMON_COLUMN_TITLES.organization]: "",
           [COMMON_COLUMN_TITLES.contactEmail]: "",
           [COMMON_COLUMN_TITLES.department]: "",
           [COMMON_COLUMN_TITLES.province]: "",
@@ -998,7 +1016,6 @@ test("Phase 3 keeps optional blank fields render-safe", async () => {
     tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
     attachmentClient: attachmentClientForRecordIds(["SEQI-0023"])
   });
-  assert.equal(plan.records[0].organization, "");
   assert.equal(plan.records[0].email, "");
   assert.equal(plan.records[0].healthcareSetting, "");
   assert.equal(plan.records[0].sustainabilityOpportunityComments.prevention, "");
