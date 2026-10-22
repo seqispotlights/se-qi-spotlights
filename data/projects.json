@@ -873,5 +873,48 @@
         "explanation": "For those patients who prefer to receive treatment orally, the CPOP program provides the opportunity to match the patient's preference should they be deemed eligible."
       }
     ]
+  },
+  {
+    "id": "SEQI-0023",
+    "type": "initiative",
+    "title": "Fraser Health Engagement Tool",
+    "photo": "images/seqi-0023.png",
+    "photoAlt": "Fraser Health Engagement Tool",
+    "province": "British Columbia",
+    "publishedOn": "16 October 2026",
+    "contactName": "Darryl Quantz",
+    "email": "darryl.quantz@fraserhealth.ca",
+    "organization": "Fraser Health",
+    "department": "",
+    "stage": "Work in progress",
+    "healthcareSetting": "",
+    "description": "Fraser Health is building QI teams’ awareness of the SE-QI Toolkit and how the toolkit can support further incorporation of sustainability into quality improvement. Promotion includes presentations, newsletter articles, one-to-one work with project leads, and informal advocacy.",
+    "sustainabilityPrinciples": [],
+    "sustainabilityOpportunities": {
+      "prevention": [],
+      "stewardshipAppropriateness": [],
+      "mitigationDecarbonization": [],
+      "climateResilienceAdaptation": [],
+      "clinicalSpecialtyTreatmentModality": []
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "",
+      "stewardshipAppropriateness": "",
+      "mitigationDecarbonization": "",
+      "climateResilienceAdaptation": "",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
+    "metrics": {
+      "environmental": [],
+      "activity": []
+    },
+    "domainsOfQuality": [],
+    "cobenefit": "",
+    "initiativeStage": "Work in progress",
+    "toolkitApplication": "The SE-QI Toolkit has been tested with a number of Choosing Wisely and waste reduction projects to explore its practical application, including the use of its reporting resources. Integration into a formal PPH QI program has been suggested, with details still being explored. The longer-term goal is to embed the Toolkit within Fraser Health’s broader QI resources, making it available for and used by all QI projects.",
+    "toolkitAudienceUptake": "The primary audience has been clinical teams and individuals initiating sustainability-related QI projects. Uptake has been early-stage and exploratory, with the Toolkit mainly used as an engagement and education tool.",
+    "mostValuableElements": "The activity metrics and outcome resources were identified as particularly valuable. These tools and verified sources help teams identify and document outcomes of their efforts related to environmental sustainability.",
+    "qiIntegration": "Yes",
+    "qiIntegrationComments": "Fraser Health hopes to embed the SE-QI Toolkit within its broader QI resources, with the longer-term goal of making it available for and used by all QI projects. This would support more consistent integration of sustainability considerations across QI activities."
   }
 ]
