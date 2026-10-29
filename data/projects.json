@@ -554,7 +554,7 @@
     "province": "British Columbia",
     "publishedOn": "14 July 2026",
     "contactName": "Morgan Flynn, Nicola Tam",
-    "email": "morgan.flynn@interiorhealth.ca",
+    "email": "nicola.tam@gmail.com",
     "organization": "Interior Health",
     "department": "Family Practice",
     "stage": "Complete",
@@ -808,6 +808,49 @@
     "qiIntegrationComments": "The SE-QI Toolkit is already embedded at the centre of the Working Group’s activities, providing participating organizations with a shared foundation, common language, and practical tools to integrate sustainability into quality improvement."
   },
   {
+    "id": "SEQI-0021",
+    "type": "initiative",
+    "title": "VCH/PH Physician Quality Improvement Program",
+    "photo": "images/seqi-0021.jpg",
+    "photoAlt": "VCH/PH Physician Quality Improvement Program",
+    "province": "British Columbia",
+    "publishedOn": "29 October 2026",
+    "contactName": "Enrique Fernandez",
+    "email": "enrique.fernandez@vch.ca",
+    "organization": "Vancouver Coastal Health",
+    "department": "Physician Quality Improvement",
+    "stage": "Complete",
+    "healthcareSetting": "",
+    "description": "In partnership, the Interior Health and Vancouver Coastal Health Physician Quality Improvement (PQI) programs inspired the Toolkit, served as early testing environments, and helped inform its formal development.",
+    "sustainabilityPrinciples": [],
+    "sustainabilityOpportunities": {
+      "prevention": [],
+      "stewardshipAppropriateness": [],
+      "mitigationDecarbonization": [],
+      "climateResilienceAdaptation": [],
+      "clinicalSpecialtyTreatmentModality": []
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "",
+      "stewardshipAppropriateness": "",
+      "mitigationDecarbonization": "",
+      "climateResilienceAdaptation": "",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
+    "metrics": {
+      "environmental": [],
+      "activity": []
+    },
+    "domainsOfQuality": [],
+    "cobenefit": "",
+    "initiativeStage": "Complete",
+    "toolkitApplication": "A dedicated planetary health session is included in the Level 3 curriculum. The session introduces the relationship between planetary health and quality improvement, provides an overview of the SE-QI Toolkit, and invites teams to apply it to their own projects.\nParticipants can also access support from the VCH Planetary Health team to identify sustainability opportunities, select relevant measures, and further integrate the Toolkit into their projects. VCH first introduced a dedicated session on the intersection of planetary health and quality improvement in Cohort 7 in 2023.",
+    "toolkitAudienceUptake": "The initiative is intended for physicians participating in the VCH/PHC PQI Level 3 Advanced Cohort Training who are leading applied quality improvement projects across a range of clinical settings.\nPlanetary health content has been delivered to Level 3 cohorts since 2023, with the SE-QI Toolkit formally embedded in the curriculum since 2024. Across these four cohorts, teams representing 63 projects have been exposed to this content:\n•\t2023 (Cohort 7): 19 projects\n•\t2024 (Cohort 8): 13 projects\n•\t2025 (Cohort 9): 11 projects\n•\t2026 (Cohort 10): 20 projects",
+    "mostValuableElements": "The principles introduced in Step 1 are particularly valuable because they provide a shared language for connecting quality improvement and sustainability. They also broaden participants’ understanding of sustainability by prompting consideration of upstream and downstream impacts, well beyond commonly recognized activities such as recycling. The Toolkit’s guided structure and practical resources, including calculators, further help teams identify, assess, and quantify relevant sustainability impacts within their projects.",
+    "qiIntegration": "Yes",
+    "qiIntegrationComments": "The SE-QI Toolkit is already formally embedded within the VCH/PHC PQI Level 3 curriculum and provides participants with a consistent approach for incorporating sustainability into their improvement projects."
+  },
+  {
     "id": "SEQI-0022",
     "type": "project",
     "title": "Coastal Complex Outpatient Antimicrobial Therapy (COpAT) Program - LGH Pilot",
@@ -916,5 +959,240 @@
     "mostValuableElements": "The activity metrics and outcome resources were identified as particularly valuable. These tools and verified sources help teams identify and document outcomes of their efforts related to environmental sustainability.",
     "qiIntegration": "Yes",
     "qiIntegrationComments": "Fraser Health hopes to embed the SE-QI Toolkit within its broader QI resources, with the longer-term goal of making it available for and used by all QI projects. This would support more consistent integration of sustainability considerations across QI activities."
+  },
+  {
+    "id": "SEQI-0024",
+    "type": "project",
+    "title": "Reusable Silicone Tourniquet for Venous Access: A Sustainability Initiative",
+    "photo": "images/seqi-0024.jpg",
+    "photoAlt": "Reusable Silicone Tourniquet for Venous Access: A Sustainability Initiative",
+    "province": "Nova Scotia",
+    "publishedOn": "29 October 2026",
+    "contactName": "Mary Lynn VanTassel",
+    "email": "marylynn.vantassel@iwk.nshealth.ca",
+    "organization": "IWK Health",
+    "department": "Health System Sustainability",
+    "stage": "Work in progress",
+    "healthcareSetting": "",
+    "description": "The silicone reusable tourniquet project is a clinical study focused on replacing single‑use tourniquets with reusable silicone tourniquets in the IWK Health Pediatric Emergency Department, phlebotomy and Pediatric Perioperative Team. The project examines whether reusable tourniquets can be safely and effectively integrated into everyday care while reducing waste and improving environmental performance. It focuses on feasibility, safety, acceptability and sustainability impact.",
+    "cobenefit": "step 3 report - referencing the Healthcare LCA database",
+    "sustainabilityPrinciples": [
+      "Decarbonization / Depollution"
+    ],
+    "sustainabilityOpportunities": {
+      "prevention": [],
+      "stewardshipAppropriateness": [],
+      "mitigationDecarbonization": [
+        "Consumables"
+      ],
+      "climateResilienceAdaptation": [],
+      "clinicalSpecialtyTreatmentModality": []
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "",
+      "stewardshipAppropriateness": "",
+      "mitigationDecarbonization": "moving from disposabel to reusable",
+      "climateResilienceAdaptation": "",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
+    "metrics": {
+      "environmental": [
+        "Number and/or weight of single-use tourniquets avoided.",
+        "Waste associated with single-use tourniquets before and after implementation.",
+        "Estimated CO₂e associated with single-use and reusable tourniquet pathways, where sufficient data are available.",
+        "Environmental implications associated with cleaning and disinfection of reusable tourniquets.",
+        "Estimated environmental impact per use based on observed reusable-tourniquet lifespan."
+      ],
+      "activity": [
+        "Number of procedures in which reusable tourniquets are used.",
+        "Number of uses achieved per reusable tourniquet.",
+        "Number of reusable tourniquets lost, damaged, or removed from service.",
+        "Frequency with which a reusable tourniquet cannot be used or a disposable alternative is required."
+      ]
+    },
+    "domainsOfQuality": [
+      {
+        "name": "Efficiency",
+        "explanation": "Reusable tourniquets may reduce waste‑related workflow interruptions and simplify supply management.\nThe study examines clinical workflow implications, including whether reusable tourniquets reduce time spent locating or replenishing single‑use supplies.\nEliminating constant restocking of disposable tourniquets can streamline procurement and reduce stockouts.\nLower waste volumes reduce handling demands for Environmental Services."
+      },
+      {
+        "name": "Safety",
+        "explanation": "The study evaluates cleaning protocols, contamination risk, and adherence to minimal‑risk REB standards.\nData collection will assess whether reusable tourniquets perform equivalently to single‑use devices in IV starts and blood draws.\nStaff feedback tools will capture any issues related to slippage, tension, or patient discomfort."
+      },
+      {
+        "name": "Patient-Centredness / Respect",
+        "explanation": "Silicone reusable tourniquets may be more comfortable, less abrasive, and less cold than plastic single‑use bands.\nParents may value environmentally responsible care, enhancing trust and alignment with family values."
+      },
+      {
+        "name": "Effectiveness",
+        "explanation": "The study evaluates whether reusable tourniquets support effective IV access without compromising technique. Quantitative and qualitative data will help determine whether reusable devices improve or maintain clinical outcomes. The study will also assess waste reduction and CO₂e impacts."
+      },
+      {
+        "name": "Appropriateness",
+        "explanation": "The study examines whether reusable devices suit pediatric workflows, patient needs, and clinical procedures.Reusable devices align with sustainability goals and responsible resource use."
+      }
+    ]
+  },
+  {
+    "id": "SEQI-0025",
+    "type": "initiative",
+    "title": "Optimizing Point-of-Care Testing for Planetary Health: A Quality Improvement Initiative",
+    "photo": "images/seqi-0025.png",
+    "photoAlt": "Optimizing Point-of-Care Testing for Planetary Health: A Quality Improvement Initiative",
+    "province": "British Columbia",
+    "publishedOn": "29 October 2026",
+    "contactName": "Li Wang",
+    "email": "Li.wang@cw.bc.ca",
+    "organization": "BC Children’s Hospital",
+    "department": "Pathology and Laboratory Medicine",
+    "stage": "Planning stage",
+    "healthcareSetting": "",
+    "description": "The objective of this QI project is to compare the environmental impacts of point-of-care testing (POCT) and central laboratory testing. We hope to advocate for reduced POCT use when central laboratories can provide turnaround times that meet clinical needs.",
+    "sustainabilityPrinciples": [],
+    "sustainabilityOpportunities": {
+      "prevention": [],
+      "stewardshipAppropriateness": [],
+      "mitigationDecarbonization": [],
+      "climateResilienceAdaptation": [],
+      "clinicalSpecialtyTreatmentModality": []
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "",
+      "stewardshipAppropriateness": "",
+      "mitigationDecarbonization": "",
+      "climateResilienceAdaptation": "",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
+    "metrics": {
+      "environmental": [],
+      "activity": []
+    },
+    "domainsOfQuality": [],
+    "cobenefit": "",
+    "initiativeStage": "Planning stage",
+    "toolkitApplication": "This is my first time to learn about this toolkit, and I would like to try it.",
+    "toolkitAudienceUptake": "The target audience includes clinicians, nurses, pharmacists, laboratory scientists, medical students, residents, and fellows.",
+    "mostValuableElements": "The calculations and impacts that are generated through the tools.",
+    "qiIntegration": "Yes",
+    "qiIntegrationComments": "Many of our medical staff members have received QI training and would welcome tools like this. We will promote the toolkit in our newsletter and encourage them to try it."
+  },
+  {
+    "id": "SEQI-0026",
+    "type": "project",
+    "title": "Intravenous to Oral Antimicrobial Switch: A Win for Patients and the Planet",
+    "photo": "images/seqi-0026.png",
+    "photoAlt": "Intravenous to Oral Antimicrobial Switch: A Win for Patients and the Planet",
+    "province": "British Columbia",
+    "publishedOn": "29 October 2026",
+    "contactName": "Dr. Shaqil Peermohamed",
+    "email": "shaqil.peermohamed@vch.ca",
+    "organization": "Vancouver Coastal Health",
+    "department": "Medical Affairs",
+    "stage": "Complete",
+    "healthcareSetting": "",
+    "description": "Health care accounts for 4.6% of Canada's greenhouse gas (GHG) emissions, 25% of which comes from medications. Antimicrobials with high bioavailability offer no additional benefit when given intravenously, except when oral (PO) administration is not feasible. Intravenous (IV) formulations have a higher carbon footprint than their PO counterparts. IV-to-PO switch strategies benefit patients and the health care system by reducing line-related adverse events, nursing time, length of hospital stay, and costs and can also reduce carbon emissions.\n\nOur primary objective was to quantify IV use of bioequivalent antimicrobials when PO administration is feasible. Secondary objectives were to determine GHG emissions and antimicrobial costs associated with unnecessary IV use of bioequivalent antimicrobials.\n\nWe performed a retrospective, cross-sectional study of hospitalized adults who received IV azithromycin, ciprofloxacin, clindamycin, cotrimoxazole, fluconazole, levofloxacin, linezolid, metronidazole, moxifloxacin, or voriconazole at Vancouver General Hospital on five dates. We determined the proportion of patients receiving these antimicrobials who met criteria for PO administration. We collaborated with the UBC Clean Energy Research Centre and applied a life cycle assessment (LCA) to assess the GHG emissions of the antimicrobial drug delivery systems using OpenLCA with the Ecoinvent database. Using these data, we calculated the GHG emissions and costs associated with unnecessary IV use.",
+    "cobenefit": "The SE-QI Toolkit helped inspire our team to apply a planetary health lens to quality improvement.",
+    "sustainabilityPrinciples": [
+      "Stewardship / Appropriateness"
+    ],
+    "sustainabilityOpportunities": {
+      "prevention": [
+        "Health Promotion / Primary Prevention",
+        "Avoiding Complications of Care",
+        "Optimal Disease Management"
+      ],
+      "stewardshipAppropriateness": [
+        "Avoid Unnecessary Treatments",
+        "Avoid Unnecessary Hospital-based Care"
+      ],
+      "mitigationDecarbonization": [
+        "Waste management"
+      ],
+      "climateResilienceAdaptation": [
+        "Healthcare delivery resilience",
+        "Provider resilience",
+        "Patient resilience"
+      ],
+      "clinicalSpecialtyTreatmentModality": [
+        "Medications & Pharmacy"
+      ]
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "",
+      "stewardshipAppropriateness": "",
+      "mitigationDecarbonization": "",
+      "climateResilienceAdaptation": "",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
+    "metrics": {
+      "environmental": [
+        "We performed a consequential LCA of two drug delivery systems (IV versus PO), which focused on the materials used for drug delivery and excluded the manufacturing of the drugs since we assumed they would be made under identical conditions. The amount of drug used was similar between the IV and PO formulations for bioequivalent antimicrobials; therefore, we focused only on the waste materials for drug preparation, distribution, and administration.",
+        "IV systems showed a much higher carbon footprint (785.4 to 2,088.5 gCO2-eq/FU) compared to the PO system, attributed to the higher amount of materials used in preparing and administering each dose of the drug. The major contributor was material production, while the transportation stage had minor impacts on overall carbon footprints. For nonhazardous drugs, landfill disposal resulted in a smaller amount of GHG emissions, as most of these materials were recalcitrant to decompose. However, the incineration of materials contaminated by hazardous drugs (fluconazole and voriconazole) added significant emissions even with energy recovery for power generation. The emissions related to drug packaging varied significantly depending on the type of packaging materials. The systems that required a compounding pharmacy process demonstrated much higher GHG emissions than those systems using premixed bags. Using the GHG estimates, switching eligible patients from IV to PO administration was associated with potential savings of approximately 80,000 gCO2-eq over the five audit dates. Extrapolated to one year, this corresponds to a reduction of 5.78 tonnes CO2-eq (±25% sensitivity range 4.33–7.22 tonnes CO2-eq). On average, the GHG savings per eligible patient per day were 1,014 gCO2-eq (±25% sensitivity range 761–1,268 gCO2-eq), equivalent to driving a gas-powered car approximately 5 km."
+      ],
+      "activity": [
+        "In total, 128 patients were identified. Seventy-eight (61%) met IV-to-PO switch criteria on the audit dates. Most eligible patients were admitted to general surgery, internal medicine, or critical care. The antimicrobial with the highest IV-to-PO switch eligibility was metronidazole (51%), most often prescribed for intra-abdominal infections. Over the five study dates, potential GHG savings were about 80,000 gCO2-eq. Potential annual cost savings were about $59,000."
+      ]
+    },
+    "domainsOfQuality": [
+      {
+        "name": "Efficiency",
+        "explanation": ""
+      },
+      {
+        "name": "Safety",
+        "explanation": ""
+      },
+      {
+        "name": "Effectiveness",
+        "explanation": ""
+      },
+      {
+        "name": "Appropriateness",
+        "explanation": ""
+      }
+    ]
+  },
+  {
+    "id": "SEQI-0027",
+    "type": "initiative",
+    "title": "Embedding Sustainability Principles and Tools into an Interdisciplinary QI Fellowship",
+    "photo": "images/seqi-0027.webp",
+    "photoAlt": "Embedding Sustainability Principles and Tools into an Interdisciplinary QI Fellowship",
+    "province": "Ontario",
+    "publishedOn": "29 October 2026",
+    "contactName": "Rachael O’Neill",
+    "email": "Rachael.oneill@unityhealth.to",
+    "organization": "Unity Health Toronto",
+    "department": "Barrett Centre for Quality Improvement",
+    "stage": "Work in progress",
+    "healthcareSetting": "",
+    "description": "The Barrett Centre for Quality Improvement (BCQI) was formed in 2025 through a generous donation from the Barrett Family Foundation. The BCQI’s vision is to embed QI initiatives throughout the St. Joseph’s site by enhancing a culture of continuous learning, encouraging innovation, and empowering people through capacity building to collaborate on solutions that improve outcomes, patient experience, and staff well-being. The cornerstone of the BCQI is the QI Fellowship Program, an interdisciplinary project-based program rooted in Lean Six Sigma and Model for Improvement methodologies. \n\nIn 2026, as part of the fellowship curriculum, the team trialed incorporating a dedicated session on Embedding Sustainability into QI. In partnership with Nicole Simms, Training and Education Lead of CASCADES, fellows learned about sustainability & climate resilience as a health system priority, the SE-QI Framework, and how to mobilize the SE-QI toolkit, especially for fellowship projects where sustainability may be a co-benefit.\n\nBy integrating established sustainability tools and principles into the QI fellowship, the fellows are learning how quality improvement can simultaneously advance patient care and environmental stewardship.",
+    "sustainabilityPrinciples": [],
+    "sustainabilityOpportunities": {
+      "prevention": [],
+      "stewardshipAppropriateness": [],
+      "mitigationDecarbonization": [],
+      "climateResilienceAdaptation": [],
+      "clinicalSpecialtyTreatmentModality": []
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "",
+      "stewardshipAppropriateness": "",
+      "mitigationDecarbonization": "",
+      "climateResilienceAdaptation": "",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
+    "metrics": {
+      "environmental": [],
+      "activity": []
+    },
+    "domainsOfQuality": [],
+    "cobenefit": "",
+    "initiativeStage": "Work in progress",
+    "toolkitApplication": "The toolkit was introduced as a tool for our QI fellows to use in their projects as well as explore opportunities for application in their daily practice throughout the healthcare centre, where sustainability may be a co-benefit.",
+    "toolkitAudienceUptake": "In progress, information shared with our cohort of 38 fellows",
+    "mostValuableElements": "After the session, most respondents (83.3%, n=12) agreed or strongly agreed that they could identify opportunities to incorporate environmental sustainability into QI work. When asked how the fellows plan to apply the knowledge and tools to their work, fellows noted: \n\n“Moving forward I will use this information to predict future outcome utilizing data to reduce waste” \n\n“Incorporate sustainability principles (directly or indirectly) to our QI initiatives.”",
+    "qiIntegration": "No",
+    "qiIntegrationComments": ""
   }
 ]
