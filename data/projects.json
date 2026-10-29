@@ -808,6 +808,49 @@
     "qiIntegrationComments": "The SE-QI Toolkit is already embedded at the centre of the Working Group’s activities, providing participating organizations with a shared foundation, common language, and practical tools to integrate sustainability into quality improvement."
   },
   {
+    "id": "SEQI-0020",
+    "type": "initiative",
+    "title": "IH Physician Quality Improvement Program",
+    "photo": "images/seqi-0020.png",
+    "photoAlt": "IH Physician Quality Improvement Program",
+    "province": "British Columbia",
+    "publishedOn": "29 October 2026",
+    "contactName": "Amanda Mckenzie",
+    "email": "amanda.mckenzie@interiorhealth.ca",
+    "organization": "Interior Health",
+    "department": "Physician Quality Improvement",
+    "stage": "Complete",
+    "healthcareSetting": "",
+    "description": "The Interior Health (IH) Physician Quality Improvement (PQI) Level 3 Advanced Cohort Training is a 10-month applied learning program that supports physicians to develop quality improvement skills and lead improvement projects within their clinical settings. Planetary health content has been included in the curriculum since 2023, and the SE-QI Toolkit has been formally embedded since 2024 to support participants in integrating sustainability into their improvement work. \n\nIn partnership, the Interior Health and Vancouver Coastal Health (VCH) PQI programs inspired the Toolkit, served as early testing environments, and helped inform its formal development.",
+    "sustainabilityPrinciples": [],
+    "sustainabilityOpportunities": {
+      "prevention": [],
+      "stewardshipAppropriateness": [],
+      "mitigationDecarbonization": [],
+      "climateResilienceAdaptation": [],
+      "clinicalSpecialtyTreatmentModality": []
+    },
+    "sustainabilityOpportunityComments": {
+      "prevention": "",
+      "stewardshipAppropriateness": "",
+      "mitigationDecarbonization": "",
+      "climateResilienceAdaptation": "",
+      "clinicalSpecialtyTreatmentModality": ""
+    },
+    "metrics": {
+      "environmental": [],
+      "activity": []
+    },
+    "domainsOfQuality": [],
+    "cobenefit": "",
+    "initiativeStage": "Complete",
+    "toolkitApplication": "A dedicated planetary health session is included in the Level 3 curriculum. The session introduces the relationship between planetary health and quality improvement, provides an overview of the SE-QI Toolkit, and invites teams to apply it to their own projects. \nParticipants can also access support from the IH Planetary Health team to identify sustainability opportunities, select relevant measures, and further integrate the Toolkit into their projects. IH first introduced a dedicated session on the intersection of planetary health and quality improvement in 2023.",
+    "toolkitAudienceUptake": "The initiative is intended for physicians participating in the IH PQI Level 3 Advanced Cohort Training who are leading applied quality improvement projects across a range of clinical settings. \nPlanetary health content has been delivered to Level 3 cohorts since 2023, with the SE-QI Toolkit formally embedded since 2024.  \nParticipants are introduced to the Toolkit during the dedicated planetary health session and encouraged to apply it to their projects, with additional support available from the Planetary Health team.",
+    "mostValuableElements": "The Toolkit’s guided structure and practical resources, including calculators, are particularly valuable in helping teams identify, assess, and quantify relevant sustainability impacts within their projects. The principles introduced in Step 1 also provide a shared language for discussing the links between quality improvement and sustainability, while encouraging consideration of both upstream and downstream impacts beyond more commonly recognized activities such as recycling.",
+    "qiIntegration": "Yes",
+    "qiIntegrationComments": "The SE-QI Toolkit is already formally embedded within the IH PQI Level 3 curriculum and provides participants with a consistent approach for incorporating sustainability into their improvement projects."
+  },
+  {
     "id": "SEQI-0021",
     "type": "initiative",
     "title": "VCH/PH Physician Quality Improvement Program",
