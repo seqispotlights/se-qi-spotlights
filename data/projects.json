@@ -15,6 +15,9 @@
     "healthcareSetting": "Long-term care, acute care",
     "description": "The C.A.R.E. Collaborative is a multi-site QI project implemented across seven long-term care homes in British Columbia and focused on reducing unnecessary and avoidable emergency department transfers from long-term care facilities.",
     "cobenefit": "Strong starting point for teams new to planetary health. Supports early-stage project development. Valuable Resources: Care Pathways: Guidance on Appraising Sustainability Emergency Department Visit Module (2015) https://networks.sustainablehealthcare.org.uk/sites/default/files/resources/3._Sustainable_Care_Pathways_Guidance_-_Emergency_Department_Visit_Module_-_Oct_2015%283%29.pdf ; British Columbia Emergency Health Services  2023 Climate Change Accountability Report https://www.bcehs.ca/our-services-site/Documents/2023%20BCEHS%20CCAR%20-%20FINAL%20PDF_MC.pdf",
+    "cwcAlignment": "",
+    "cwcSpecialtyNames": [],
+    "cwcSpecialties": {},
     "sustainabilityPrinciples": [
       "Stewardship / Appropriateness"
     ],
@@ -87,6 +90,15 @@
     "healthcareSetting": "Anesthesiology Operating Room, Tertiary Care",
     "description": "This project aimed to improve waste segregation in the anesthesiology OR at St. Boniface Hospital and reduce unnecessary incineration of medical waste. Previously, a single pharmaceutical waste bin was used for mixed OR waste, which was then transported to Minnesota for high-carbon incineration. However, evidence suggests that most OR waste can instead be autoclaved or landfilled with lower environmental impact and cost. A new segregation system was therefore introduced with separate bins for sharps, pharmaceutical liquids, and general waste, supported by education sessions and ongoing staff coaching.",
     "cobenefit": "Waste Management and Reduction | The Canadian Coalition for Green Healthcare: https://greenhealthcare.ca/waste-management-and-reduction/\nImproper disposal of medical waste costs health systems and the environment | CMAJ: https://www.cmaj.ca/content/195/14/e518#:~:text=In%20a%20recent%20audit%20of,and%20cutlery%20from%20the%20cafeteria",
+    "cwcAlignment": "Yes",
+    "cwcSpecialtyNames": [
+      "Orthopaedics"
+    ],
+    "cwcSpecialties": {
+      "Orthopaedics": [
+        "Don’t dispose of non-contaminated wrapping materials in contaminated waste bins."
+      ]
+    },
     "sustainabilityPrinciples": [
       "Decarbonization / Depollution"
     ],
@@ -192,6 +204,9 @@
     "healthcareSetting": "Acute care",
     "description": "An initiative at St. Paul’s Hospital aimed to reduce failures of personal protective devices caused by depleted batteries in the Psychiatric Assessment and Stabilization Unit. A structured inventory control and battery replacement process was introduced to improve equipment reliability, enhance staff and patient safety, and reduce disruptions to care.",
     "cobenefit": "The Toolkit supports broader systems thinking by highlighting downstream effects, trade-offs, and co-benefits even in projects with mixed environmental implications.\n\nHealthcare Life Cycle Analysis (LCA) Database : https://healthcarelca.com/database",
+    "cwcAlignment": "No",
+    "cwcSpecialtyNames": [],
+    "cwcSpecialties": {},
     "sustainabilityPrinciples": [
       "Stewardship / Appropriateness"
     ],
@@ -260,6 +275,9 @@
     "healthcareSetting": "Primary care",
     "description": "An early-stage, ongoing project focused on identifying where repetitive and unnecessary laboratory testing can be eliminated. New policy has been introduced to implement “hard stops” that prevent physicians from ordering tests earlier than recommended guidelines. The Toolkit will be applied to estimate the carbon emissions associated with avoided testing.",
     "cobenefit": "Choosing Wisely Canada | Drop the Pre-Op: https://choosingwiselycanada.org/wp-content/uploads/2017/07/CWC_Pre-Op_Toolkit_v1.2_2017-07-12.pdf\nChoosing Wisely Canada | Lab Recommendations: https://choosingwiselycanada.org/wp-content/uploads/2022/10/Choosing-Wisely-Canada-Labs-Recommendations-Full-List.pdf\nCASCADES Reducing Unnecessary Care: Estimating Environmental Impact.: https://view.publitas.com/5231e51e-4654-42c2-accd-b722e21f3093/perioperative_estimating-environmental-impacts-of-unnecessary-care/page/1?_gl=1*1yiwipz*_ga*NTQxOTQ2NDA3LjE3MjU2NTgzMzk.*_ga_TRM5NF4JFC*MTcyOTcwMzc4MC42LjEuMTcyOTcwNDIzMy4wLjAuMA",
+    "cwcAlignment": "",
+    "cwcSpecialtyNames": [],
+    "cwcSpecialties": {},
     "sustainabilityPrinciples": [
       "Stewardship / Appropriateness"
     ],
@@ -323,6 +341,15 @@
     "healthcareSetting": "Primary care",
     "description": "This conceptual project focuses on improving HPV vaccine uptake among individuals who were aged 10–17 during the COVID-19 pandemic and may have missed routine school-based immunizations due to virtual learning and disrupted healthcare access. It is intended to strengthen preventive care delivery and reduce the long-term burden of HPV-related disease and complications.",
     "cobenefit": "The Toolkit helped broaden the framing of HPV vaccination QI efforts beyond clinical",
+    "cwcAlignment": "Yes",
+    "cwcSpecialtyNames": [
+      "Public Health"
+    ],
+    "cwcSpecialties": {
+      "Public Health": [
+        "Don’t depend on tertiary care interventions when a system-wide shift toward sustainable preventive care is possible."
+      ]
+    },
     "sustainabilityPrinciples": [
       "Prevention"
     ],
@@ -428,6 +455,15 @@
     "healthcareSetting": "Acute care, ambulatory care",
     "description": "A transition from single-use blue wrap to reusable rigid sterilization containers for surgical instrument sterilization is currently being implemented across women’s and children’s operating rooms, and various ambulatory and inpatient units. The initiative includes procurement of over 1,200 containers and associated accessories (covers, baskets, liners, tags, etc.), totaling more than 8,000 items.",
     "cobenefit": "Step 2 of the Toolkit provided clear direction on how and where sustainability could be integrated into the project by mapping opportunities to relevant environmental impact areas.",
+    "cwcAlignment": "Yes",
+    "cwcSpecialtyNames": [
+      "Critical care"
+    ],
+    "cwcSpecialties": {
+      "Critical care": [
+        "Don’t use single-use/disposable items when a reusable option is available and less resource intensive."
+      ]
+    },
     "sustainabilityPrinciples": [
       "Decarbonization / Depollution"
     ],
@@ -492,6 +528,9 @@
     "healthcareSetting": "Family Medicine",
     "description": "This initiative aims to promote reassessment of antidepressant prescriptions in primary care for patients who have been on treatment for over one year, addressing potential inappropriate long-term prescribing and reflexive renewal by family physicians. Clinical recommendations typically support reassessment after six months of remission, though this is often missed in practice.",
     "cobenefit": "The Toolkit helps users clearly visualize or conceptualize how their project contributes to sustainability outcomes.",
+    "cwcAlignment": "",
+    "cwcSpecialtyNames": [],
+    "cwcSpecialties": {},
     "sustainabilityPrinciples": [
       "Stewardship / Appropriateness"
     ],
@@ -561,6 +600,15 @@
     "healthcareSetting": "Primary Care",
     "description": "This project was a collaboration between a primary care pharmacist and a family physician to reduce the environmental impact of inhaler prescribing in primary care. The initiative focused on optimizing respiratory care by assessing whether inhalers were needed, identifying opportunities for deprescribing when clinically appropriate, switching patients to lower-carbon dry powder inhalers, and providing education on inhaler disposal. Patients’ experiences with team-based care were also explored, including the role of sustainability considerations and the value of in-depth conversations in healthcare decision-making.",
     "cobenefit": "The Toolkit offers helpful reinforcement of existing knowledge and the reminder to consistently apply a sustainability lens when completing quality improvement work.",
+    "cwcAlignment": "Yes",
+    "cwcSpecialtyNames": [
+      "Respiratory medicine"
+    ],
+    "cwcSpecialties": {
+      "Respiratory medicine": [
+        "\"Don’t prescribe high-GHG metered-dose inhalers for asthma/COPD when a lower-carbon option (dry powder, soft mist or low-GHG propellant) has similar efficacy, the patient can use it correctly, and preferences are considered.\""
+      ]
+    },
     "sustainabilityPrinciples": [
       "Stewardship / Appropriateness"
     ],
@@ -634,6 +682,15 @@
     "healthcareSetting": "Outpatient renal clinic",
     "description": "An initiative in an outpatient renal clinic aimed to reduce paper waste by digitizing the receipt of community laboratory blood work results. The previous fax-based process generated approximately 70–120 pages per day, including cover sheets and duplicate reports that were routinely discarded.",
     "cobenefit": "The guidance for identifying and quantifying environmental impacts within QI projects, particularly through CO₂e estimation tools for paper use.",
+    "cwcAlignment": "Yes",
+    "cwcSpecialtyNames": [
+      "Nephrology"
+    ],
+    "cwcSpecialties": {
+      "Nephrology": [
+        "Don’t initiate erythropoiesis-stimulating agents (ESAs) in chronic kidney disease (CKD) patients with hemoglobin levels greater than or equal to 100 g/L without symptoms of anemia., \"Don’t prescribe nonsteroidal anti-inflammatory drugs (NSAIDS) in individuals with hypertension or heart failure or CKD of all causes, including diabetes.\", \"Don’t prescribe angiotensin converting enzyme (ACE) inhibitors in combination with angiotensin II receptor blockers (ARBs) for the treatment of hypertension, diabetic nephropathy and heart failure.\", \"Don’t initiate chronic dialysis without ensuring a shared decision-making process between patients, their families, and their nephrology health care team.\", Don’t initiate dialysis in outpatients with Stage 5 CKD in the absence of clinical indications., \"Don’t prescribe or renew drugs for patients with CKD or kidney failure on dialysis without reviewing polypharmacy, pill burden and how reduced kidney function affects dosing and medication safety.\", Don’t prescribe opioids for chronic pain without first optimizing non-opioid and non-pharmacological options in patients with chronic kidney disease (CKD) and kidney failure receiving dialysis."
+      ]
+    },
     "sustainabilityPrinciples": [
       "Decarbonization / Depollution"
     ],
@@ -909,6 +966,15 @@
     "healthcareSetting": "Outpatient Acute Care",
     "description": "Lions Gate Hospital (LGH) will launch the Complex Outpatient Antimicrobial Therapy (COpAT) program, which integrates the existing Community IV Program (CPIV) with a new Community PO (oral) Program pilot (CPOP). Led by Infectious Disease specialists and supported by Medical Day Care staff and a clinical pharmacist, COpAT will provide specialist oversight and routine monitoring for eligible North Shore residents receiving either IV or evidence-supported oral antimicrobial therapy for complex infections.",
     "cobenefit": "The carbon footprint estimation examples and resources were particularly useful, making the process of capturing a project's environmental impact feel less intimidating and more achievable through high-level estimates based on the provided references and calculations.",
+    "cwcAlignment": "Yes",
+    "cwcSpecialtyNames": [
+      "Internal medicine"
+    ],
+    "cwcSpecialties": {
+      "Internal medicine": [
+        "\"Don’t prescribe intravenous (IV) antibiotics for patients who can safely be treated with an oral option, given that IV antibiotics have a higher carbon footprint.\""
+      ]
+    },
     "sustainabilityPrinciples": [
       "Stewardship / Appropriateness"
     ],
@@ -1019,6 +1085,15 @@
     "healthcareSetting": "",
     "description": "The silicone reusable tourniquet project is a clinical study focused on replacing single‑use tourniquets with reusable silicone tourniquets in the IWK Health Pediatric Emergency Department, phlebotomy and Pediatric Perioperative Team. The project examines whether reusable tourniquets can be safely and effectively integrated into everyday care while reducing waste and improving environmental performance. It focuses on feasibility, safety, acceptability and sustainability impact.",
     "cobenefit": "step 3 report - referencing the Healthcare LCA database",
+    "cwcAlignment": "Yes",
+    "cwcSpecialtyNames": [
+      "Critical care"
+    ],
+    "cwcSpecialties": {
+      "Critical care": [
+        "Don’t use single-use/disposable items when a reusable option is available and less resource intensive."
+      ]
+    },
     "sustainabilityPrinciples": [
       "Decarbonization / Depollution"
     ],
@@ -1135,6 +1210,9 @@
     "healthcareSetting": "",
     "description": "Health care accounts for 4.6% of Canada's greenhouse gas (GHG) emissions, 25% of which comes from medications. Antimicrobials with high bioavailability offer no additional benefit when given intravenously, except when oral (PO) administration is not feasible. Intravenous (IV) formulations have a higher carbon footprint than their PO counterparts. IV-to-PO switch strategies benefit patients and the health care system by reducing line-related adverse events, nursing time, length of hospital stay, and costs and can also reduce carbon emissions.\n\nOur primary objective was to quantify IV use of bioequivalent antimicrobials when PO administration is feasible. Secondary objectives were to determine GHG emissions and antimicrobial costs associated with unnecessary IV use of bioequivalent antimicrobials.\n\nWe performed a retrospective, cross-sectional study of hospitalized adults who received IV azithromycin, ciprofloxacin, clindamycin, cotrimoxazole, fluconazole, levofloxacin, linezolid, metronidazole, moxifloxacin, or voriconazole at Vancouver General Hospital on five dates. We determined the proportion of patients receiving these antimicrobials who met criteria for PO administration. We collaborated with the UBC Clean Energy Research Centre and applied a life cycle assessment (LCA) to assess the GHG emissions of the antimicrobial drug delivery systems using OpenLCA with the Ecoinvent database. Using these data, we calculated the GHG emissions and costs associated with unnecessary IV use.",
     "cobenefit": "The SE-QI Toolkit helped inspire our team to apply a planetary health lens to quality improvement.",
+    "cwcAlignment": "",
+    "cwcSpecialtyNames": [],
+    "cwcSpecialties": {},
     "sustainabilityPrinciples": [
       "Stewardship / Appropriateness"
     ],
