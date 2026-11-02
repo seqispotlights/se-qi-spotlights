@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { pathToFileURL } from "node:url";
 import { promisify } from "node:util";
 import {
+  CWC_SPECIALTY_COLUMN_TITLES,
   COMMON_COLUMN_TITLES,
   DEFAULT_IMAGES_DIRECTORY,
   EXPECTED_COLUMN_TITLES,
@@ -136,6 +137,12 @@ function normalizeDateCellToIso(value) {
 
   if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
     return text;
+  }
+
+  if (/^\d{5}(?:\.\d+)?$/.test(text)) {
+    const excelSerial = Number(text);
+    const parsed = new Date(Date.UTC(1899, 11, 30) + excelSerial * 86400000);
+    return parsed.toISOString().slice(0, 10);
   }
 
   const parsed = new Date(text);
@@ -535,6 +542,7 @@ export function assignMissingReadyRecordIds(
 export function validateGeneratedWebsiteRecords(records) {
   const errors = [];
   const approvedPrinciples = new Set(SUSTAINABILITY_TAXONOMY.principles.values);
+  const approvedCwcSpecialties = new Set(CWC_SPECIALTY_COLUMN_TITLES);
   const opportunityDefinitions = new Map(
     SUSTAINABILITY_TAXONOMY.opportunities.map(category => [category.key, category])
   );
@@ -565,6 +573,51 @@ export function validateGeneratedWebsiteRecords(records) {
   for (const record of records || []) {
     const recordId = trimText(record?.id) || "<missing>";
     inspectValue(record, recordId, "record");
+
+    if (
+      record?.cwcAlignment !== undefined ||
+      record?.cwcSpecialtyNames !== undefined ||
+      record?.cwcSpecialties !== undefined
+    ) {
+      if (typeof record.cwcAlignment !== "string") {
+        errors.push(makeRecordError(recordId, "cwcAlignment must be a string"));
+      }
+
+      if (
+        record.cwcSpecialtyNames !== undefined &&
+        !Array.isArray(record.cwcSpecialtyNames)
+      ) {
+        errors.push(makeRecordError(recordId, "cwcSpecialtyNames must be an array"));
+      } else if (Array.isArray(record.cwcSpecialtyNames)) {
+        for (const specialty of record.cwcSpecialtyNames) {
+          if (typeof specialty !== "string" || !approvedCwcSpecialties.has(specialty)) {
+            errors.push(makeRecordError(recordId, `Unknown CWC specialty selection: ${specialty}`));
+          }
+        }
+      }
+
+      const specialties = record.cwcSpecialties;
+      if (!specialties || typeof specialties !== "object" || Array.isArray(specialties)) {
+        errors.push(makeRecordError(recordId, "cwcSpecialties must be an object"));
+      } else {
+        for (const [specialty, recommendations] of Object.entries(specialties)) {
+          if (!approvedCwcSpecialties.has(specialty)) {
+            errors.push(makeRecordError(recordId, `Unknown CWC specialty: ${specialty}`));
+          }
+          if (!Array.isArray(recommendations) || recommendations.length === 0) {
+            errors.push(
+              makeRecordError(recordId, `cwcSpecialties.${specialty} must be a non-empty array`)
+            );
+            continue;
+          }
+          if (recommendations.some(value => typeof value !== "string" || !value.trim())) {
+            errors.push(
+              makeRecordError(recordId, `cwcSpecialties.${specialty} contains an empty recommendation`)
+            );
+          }
+        }
+      }
+    }
 
     if (!Array.isArray(record?.sustainabilityPrinciples)) {
       errors.push(makeRecordError(recordId, "sustainabilityPrinciples must be an array"));

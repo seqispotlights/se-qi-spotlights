@@ -71,9 +71,11 @@ jobs:
 
       - name: Run publishing tests and syntax checks
         run: |
+          node --check src/cwc-alignment.js
           node --check src/script.js
           node --check scripts/generate-projects-preview.mjs
           node --check scripts/publish-spotlights.mjs
+          node scripts/test-cwc-alignment.mjs
           node scripts/test-publishing-workflow.mjs
 
       - name: Prepare website content

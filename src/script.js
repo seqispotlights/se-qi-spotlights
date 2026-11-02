@@ -14,7 +14,9 @@ let activeFilters = {
     province: new Set(),
     sustainabilityPrinciples: new Set(),
     opportunityCategories: new Set(),
-    opportunityDetails: new Set()
+    opportunityDetails: new Set(),
+    cwcAlignedOnly: false,
+    cwcSpecialties: new Set()
 };
 
 function opportunityDetailToken(categoryKey, value) {
@@ -53,6 +55,30 @@ function previewModeEnabled() {
     return new URLSearchParams(window.location.search).get("preview") === "1";
 }
 
+function isCwcAlignedProject(project) {
+    return String(project?.cwcAlignment || "").trim().toLowerCase() === "yes";
+}
+
+function getProjectCwcSpecialties(project) {
+    const explicitNames = Array.isArray(project?.cwcSpecialtyNames)
+        ? project.cwcSpecialtyNames
+        : [];
+    const recommendationNames = project?.cwcSpecialties &&
+        typeof project.cwcSpecialties === "object" &&
+        !Array.isArray(project.cwcSpecialties)
+            ? Object.keys(project.cwcSpecialties)
+            : [];
+
+    return [...new Set([...explicitNames, ...recommendationNames]
+        .map(value => String(value || "").trim())
+        .filter(Boolean))];
+}
+
+function previewProjectId() {
+    if (!previewModeEnabled()) return "";
+    return new URLSearchParams(window.location.search).get("project") || "";
+}
+
 async function fetchJson(path, label) {
     const response = await fetch(path, { cache: "no-cache" });
 
@@ -63,15 +89,45 @@ async function fetchJson(path, label) {
     return response.json();
 }
 
-async function loadProjectData() {
-    const path = previewModeEnabled() ? "data/projects.preview.json" : "data/projects.json";
-    const projects = await fetchJson(path, path);
+function mergePreviewProjects(publishedProjects, previewProjects) {
+    const previewById = new Map(
+        previewProjects
+            .filter(project => project && project.id)
+            .map(project => [project.id, project])
+    );
+    const merged = publishedProjects.map(project => {
+        const previewProject = project && project.id
+            ? previewById.get(project.id)
+            : null;
+        if (previewProject) previewById.delete(project.id);
+        return previewProject || project;
+    });
 
-    if (!Array.isArray(projects)) {
-        throw new Error(path + " must contain an array of project records");
+    return merged.concat(...previewById.values());
+}
+
+async function loadProjectData() {
+    const publishedPath = "data/projects.json";
+
+    if (!previewModeEnabled()) {
+        const projects = await fetchJson(publishedPath, publishedPath);
+        if (!Array.isArray(projects)) {
+            throw new Error(publishedPath + " must contain an array of project records");
+        }
+        return projects;
     }
 
-    return projects;
+    const previewPath = "data/projects.preview.json";
+    const [publishedProjects, previewProjects] = await Promise.all([
+        fetchJson(publishedPath, publishedPath),
+        fetchJson(previewPath, previewPath)
+    ]);
+
+    if (!Array.isArray(publishedProjects) || !Array.isArray(previewProjects)) {
+        throw new Error("Project data files must contain arrays of project records");
+    }
+
+    return mergePreviewProjects(publishedProjects, previewProjects);
 }
 
 async function loadSustainabilityTaxonomy() {
@@ -266,6 +322,46 @@ function buildOpportunityFilterPanel(panel) {
     }
 }
 
+function buildCwcFilterPanel(panel, specialties) {
+    const description = document.createElement("p");
+    description.className = "cwc-filter-description";
+    description.textContent =
+        "Explore projects aligned with Choosing Wisely Canada recommendations. Filter by specialty.";
+    panel.appendChild(description);
+
+    panel.appendChild(
+        createFilterCheckbox({
+            labelText: "All CWC-aligned projects",
+            value: "aligned",
+            dataset: { filterKind: "cwcAlignment" },
+            className: "cwc-alignment-filter-label"
+        })
+    );
+
+    if (specialties.length === 0) return;
+
+    const specialtyGroup = document.createElement("div");
+    specialtyGroup.className = "cwc-specialty-filter-group";
+
+    const heading = document.createElement("span");
+    heading.className = "cwc-specialty-filter-heading";
+    heading.textContent = "Specialty";
+    specialtyGroup.appendChild(heading);
+
+    for (const specialty of specialties) {
+        specialtyGroup.appendChild(
+            createFilterCheckbox({
+                labelText: specialty,
+                value: specialty,
+                dataset: { filterKind: "cwcSpecialty" },
+                className: "cwc-specialty-filter-label"
+            })
+        );
+    }
+
+    panel.appendChild(specialtyGroup);
+}
+
 function buildFilters() {
     const sidebar = document.getElementById("filterSidebar");
     if (!sidebar || !SUSTAINABILITY_TAXONOMY) return;
@@ -295,10 +391,23 @@ function buildFilters() {
     );
     buildOpportunityFilterPanel(opportunitiesGroup.panel);
 
+    const cwcSpecialties = [...new Set(
+        REGULAR_PROJECTS
+            .filter(isCwcAlignedProject)
+            .flatMap(getProjectCwcSpecialties)
+    )].sort((a, b) => a.localeCompare(b));
+    const cwcGroup = createAccordionSection(
+        "cwc-filter-panel",
+        "Choosing Wisely Canada Alignment"
+    );
+    cwcGroup.section.classList.add("filter-group--cwc");
+    buildCwcFilterPanel(cwcGroup.panel, cwcSpecialties);
+
     sidebar.append(
         provinceGroup.section,
         principlesGroup.section,
-        opportunitiesGroup.section
+        opportunitiesGroup.section,
+        cwcGroup.section
     );
 }
 
@@ -319,6 +428,12 @@ function onFilterChange(event) {
         input.checked
             ? activeFilters.opportunityDetails.add(token)
             : activeFilters.opportunityDetails.delete(token);
+    } else if (kind === "cwcAlignment") {
+        activeFilters.cwcAlignedOnly = input.checked;
+    } else if (kind === "cwcSpecialty") {
+        input.checked
+            ? activeFilters.cwcSpecialties.add(input.value)
+            : activeFilters.cwcSpecialties.delete(input.value);
     } else {
         return;
     }
@@ -364,6 +479,7 @@ function projectMatchesSearch(project) {
     const metricValues = Object.values(project.metrics || {}).flatMap(values =>
         Array.isArray(values) ? values : []
     );
+    const cwcSpecialtyValues = getProjectCwcSpecialties(project);
 
     const searchable = [
         project.title,
@@ -379,6 +495,8 @@ function projectMatchesSearch(project) {
         project.mostValuableElements,
         project.qiIntegrationComments,
         project.cobenefit,
+        project.cwcAlignment,
+        ...cwcSpecialtyValues,
         ...(project.sustainabilityPrinciples || []),
         ...opportunityCategoryLabels,
         ...opportunityValues,
@@ -435,6 +553,17 @@ function projectMatchesFilters(project) {
         });
 
         if (!matchesParent && !matchesChild) return false;
+    }
+
+    const cwcAligned = isCwcAlignedProject(project);
+    if (activeFilters.cwcAlignedOnly && !cwcAligned) return false;
+
+    if (activeFilters.cwcSpecialties.size > 0) {
+        const projectSpecialties = getProjectCwcSpecialties(project);
+        const matchesSpecialty = [...activeFilters.cwcSpecialties].some(specialty =>
+            projectSpecialties.includes(specialty)
+        );
+        if (!cwcAligned || !matchesSpecialty) return false;
     }
 
     return true;
@@ -619,7 +748,14 @@ function buildResourceLink(url, title) {
     }
 
     const linkText = cleanResourceTitle(title) || safeURL;
-    return `<a class="toolkit-resource-link" href="${escapeHTML(safeURL)}" target="_blank" rel="noopener noreferrer">${escapeHTML(linkText)}</a>`;
+    return `<a class="toolkit-resource-link" href="${escapeHTML(safeURL)}" target="_blank" rel="noopener noreferrer">
+        <svg class="toolkit-resource-link__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 3h6v6"></path>
+            <path d="M10 14 21 3"></path>
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+        </svg>
+        <span>${escapeHTML(linkText)}</span>
+    </a>`;
 }
 
 function splitPlainResourceItems(value) {
@@ -826,12 +962,12 @@ function buildTile(project, index) {
     const footer = document.createElement("div");
     footer.className = "tile-footer";
 
-    if (isInitiative) {
-        const label = document.createElement("span");
-        label.className = "tile-type-label";
-        label.textContent = "Training & Capacity Building";
-        footer.appendChild(label);
-    }
+    const label = document.createElement("span");
+    label.className = isInitiative
+        ? "tile-type-label"
+        : "tile-type-label tile-type-label--project";
+    label.textContent = isInitiative ? "Training & Capacity Building" : "QI Project";
+    footer.appendChild(label);
 
     const titleEl = document.createElement("h2");
     titleEl.className = "tile-title";
@@ -1135,6 +1271,9 @@ function buildModalHTML(p) {
     }
 
     const principleTagsHTML = buildPrincipleTagsHTML(p.sustainabilityPrinciples, "tag--teal");
+    const cwcAlignmentSection = globalThis.CWCAlignment
+        ? globalThis.CWCAlignment.buildSectionHTML(p)
+        : "";
     const principlesSection = principleTagsHTML
         ? buildModalSection("Sustainability Principles", `<div class="tag-row">${principleTagsHTML}</div>`)
         : "";
@@ -1161,7 +1300,7 @@ function buildModalHTML(p) {
 
     const domainsHTML = buildDetailItems(p.domainsOfQuality);
     const domainsSection = domainsHTML
-        ? buildModalSection("Domains of Quality", `<div class="detail-list">${domainsHTML}</div>`)
+        ? buildModalSection("Domains of Quality", `<div class="detail-list domains-list">${domainsHTML}</div>`)
         : "";
 
     return `
@@ -1171,6 +1310,7 @@ function buildModalHTML(p) {
       ${buildPlainTextSection("Project Description", p.description)}
       ${principlesSection}
       ${opportunitiesSection}
+      ${cwcAlignmentSection}
       ${metricsSection}
       ${domainsSection}
       ${buildToolkitSection("Most Valuable SE-QI Toolkit Resources", p.cobenefit)}
@@ -1186,7 +1326,9 @@ function updateActiveCount() {
         activeFilters.province.size +
         activeFilters.sustainabilityPrinciples.size +
         activeFilters.opportunityCategories.size +
-        activeFilters.opportunityDetails.size;
+        activeFilters.opportunityDetails.size +
+        (activeFilters.cwcAlignedOnly ? 1 : 0) +
+        activeFilters.cwcSpecialties.size;
 
     const badge = document.getElementById("filterBadge");
     const clearBtn = document.getElementById("clearFilters");
@@ -1212,6 +1354,10 @@ function updateActiveCount() {
     updateFilterSectionCount(
         "opportunities-filter-panel",
         activeFilters.opportunityCategories.size + activeFilters.opportunityDetails.size
+    );
+    updateFilterSectionCount(
+        "cwc-filter-panel",
+        (activeFilters.cwcAlignedOnly ? 1 : 0) + activeFilters.cwcSpecialties.size
     );
 }
 
@@ -1251,6 +1397,8 @@ function clearAllFilters() {
     activeFilters.sustainabilityPrinciples.clear();
     activeFilters.opportunityCategories.clear();
     activeFilters.opportunityDetails.clear();
+    activeFilters.cwcAlignedOnly = false;
+    activeFilters.cwcSpecialties.clear();
     document.querySelectorAll(".filter-checkbox").forEach(cb => { cb.checked = false; });
     renderProjects();
     renderInitiatives();
@@ -1329,6 +1477,12 @@ async function initializeGallery() {
         renderInitiatives();
         updateActiveCount();
         bindGalleryEvents();
+
+        const requestedProjectId = previewProjectId();
+        const previewProject = requestedProjectId
+            ? PROJECTS.find(project => project.id === requestedProjectId)
+            : null;
+        if (previewProject) requestAnimationFrame(() => openModal(previewProject));
     } catch (error) {
         showProjectLoadError(error);
     }

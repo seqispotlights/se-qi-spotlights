@@ -67,6 +67,7 @@ const testBridge = `
   buildTile = project => ({ project });
   globalThis.galleryTest = {
     setProjectData,
+    mergePreviewProjects,
     projectMatchesFilters,
     renderProjects,
     renderInitiatives,
@@ -77,6 +78,8 @@ const testBridge = `
       activeFilters.sustainabilityPrinciples.clear();
       activeFilters.opportunityCategories.clear();
       activeFilters.opportunityDetails.clear();
+      activeFilters.cwcAlignedOnly = Boolean(filters.cwcAlignedOnly);
+      activeFilters.cwcSpecialties.clear();
       searchQuery = String(filters.search || "");
       (filters.province || []).forEach(value => activeFilters.province.add(value));
       (filters.sustainabilityPrinciples || []).forEach(value =>
@@ -88,6 +91,9 @@ const testBridge = `
       (filters.opportunityDetails || []).forEach(([categoryKey, value]) =>
         activeFilters.opportunityDetails.add(opportunityDetailToken(categoryKey, value))
       );
+      (filters.cwcSpecialties || []).forEach(value =>
+        activeFilters.cwcSpecialties.add(value)
+      );
     },
     snapshotFilters() {
       return {
@@ -95,6 +101,8 @@ const testBridge = `
         sustainabilityPrinciples: [...activeFilters.sustainabilityPrinciples],
         opportunityCategories: [...activeFilters.opportunityCategories],
         opportunityDetails: [...activeFilters.opportunityDetails],
+        cwcAlignedOnly: activeFilters.cwcAlignedOnly,
+        cwcSpecialties: [...activeFilters.cwcSpecialties],
         search: searchQuery
       };
     }
@@ -119,6 +127,9 @@ const projectBcWaste = {
   title: "Laboratory waste reduction",
   province: "British Columbia",
   sustainabilityPrinciples: ["Stewardship / Appropriateness"],
+  cwcAlignment: "Yes",
+  cwcSpecialtyNames: ["Nephrology"],
+  cwcSpecialties: { Nephrology: ["Synthetic recommendation"] },
   sustainabilityOpportunities: opportunities({
     prevention: ["Avoiding Complications of Care"],
     stewardshipAppropriateness: ["Minimize Delays in Care"],
@@ -148,6 +159,8 @@ const projectBcEnergy = {
   title: "Lower-energy primary care",
   province: "British Columbia",
   sustainabilityPrinciples: ["Decarbonization / Depollution"],
+  cwcAlignment: "YES",
+  cwcSpecialties: { Orthopaedics: ["Synthetic recommendation"] },
   sustainabilityOpportunities: opportunities({
     mitigationDecarbonization: ["Energy"],
     clinicalSpecialtyTreatmentModality: ["Primary Care"]
@@ -293,6 +306,8 @@ test("Test 10 - Clear Filters resets every new filter without clearing search", 
     sustainabilityPrinciples: ["Stewardship / Appropriateness"],
     opportunityCategories: ["mitigationDecarbonization"],
     opportunityDetails: [["mitigationDecarbonization", "Waste management"]],
+    cwcAlignedOnly: true,
+    cwcSpecialties: ["Nephrology"],
     search: "waste"
   });
   checkboxStubs.splice(0, checkboxStubs.length, { checked: true }, { checked: true });
@@ -303,6 +318,8 @@ test("Test 10 - Clear Filters resets every new filter without clearing search", 
     sustainabilityPrinciples: [],
     opportunityCategories: [],
     opportunityDetails: [],
+    cwcAlignedOnly: false,
+    cwcSpecialties: [],
     search: "waste"
   });
   assert.ok(checkboxStubs.every(checkbox => checkbox.checked === false));
@@ -347,6 +364,23 @@ test("Test 12 - Records work when all five retired checkbox fields are absent", 
   assert.deepEqual(renderedIds(elements.projectGrid), ["PROJECT-NEW-SCHEMA"]);
 });
 
+test("Preview records update the full gallery without hiding unchanged projects", () => {
+  const published = [
+    { id: "PROJECT-1", type: "project", title: "Published one" },
+    { id: "PROJECT-2", type: "project", title: "Published two" }
+  ];
+  const preview = [
+    { id: "PROJECT-2", type: "project", title: "Updated two" },
+    { id: "PROJECT-3", type: "project", title: "New preview project" }
+  ];
+
+  assert.deepEqual(galleryTest.mergePreviewProjects(published, preview), [
+    published[0],
+    preview[0],
+    preview[1]
+  ]);
+});
+
 test("Within-group selections use OR logic", () => {
   galleryTest.setFilters({
     sustainabilityPrinciples: ["Prevention", "Decarbonization / Depollution"]
@@ -376,6 +410,26 @@ test("Initiatives use the same nested filters as project cards", () => {
   assert.deepEqual(renderedIds(elements.projectGrid), ["PROJECT-BC-WASTE"]);
   assert.deepEqual(renderedIds(elements.initiativeGrid), ["INITIATIVE-BC-WASTE"]);
   assert.equal(elements.initiativesSection.style.display, "");
+});
+
+test("CWC-aligned projects filter excludes projects and initiatives without alignment", () => {
+  galleryTest.setFilters({ cwcAlignedOnly: true });
+  renderBoth();
+  assert.deepEqual(renderedIds(elements.projectGrid), ["PROJECT-BC-WASTE", "PROJECT-BC-ENERGY"]);
+  assert.deepEqual(renderedIds(elements.initiativeGrid), []);
+  assert.equal(elements.initiativesSection.style.display, "none");
+});
+
+test("Selecting a CWC specialty implies alignment without requiring the broad checkbox", () => {
+  galleryTest.setFilters({ cwcSpecialties: ["Nephrology"] });
+  galleryTest.renderProjects();
+  assert.deepEqual(renderedIds(elements.projectGrid), ["PROJECT-BC-WASTE"]);
+});
+
+test("Multiple CWC specialties use OR logic and support recommendation-key fallback", () => {
+  galleryTest.setFilters({ cwcSpecialties: ["Nephrology", "Orthopaedics"] });
+  galleryTest.renderProjects();
+  assert.deepEqual(renderedIds(elements.projectGrid), ["PROJECT-BC-WASTE", "PROJECT-BC-ENERGY"]);
 });
 
 console.log(`${passed} gallery filtering tests passed.`);

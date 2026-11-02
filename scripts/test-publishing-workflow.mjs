@@ -3,6 +3,9 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
+  CWC_ALIGNMENT_COLUMN_TITLE,
+  CWC_SPECIALTY_COLUMN_TITLES,
+  CWC_SPECIALTY_SELECTOR_COLUMN_TITLES,
   COMMON_COLUMN_TITLES,
   EXPECTED_COLUMN_TITLES,
   INITIATIVE_TOOLKIT_USE,
@@ -32,7 +35,10 @@ import {
   validateGeneratedWebsiteRecords
 } from "./publish-spotlights.mjs";
 
-const columns = EXPECTED_COLUMN_TITLES.map((title, index) => ({
+const columns = [
+  ...EXPECTED_COLUMN_TITLES,
+  ...CWC_SPECIALTY_SELECTOR_COLUMN_TITLES
+].map((title, index) => ({
   id: index + 1,
   title
 }));
@@ -310,6 +316,102 @@ test("Phase 2B mapping validates ID, type, title, description, stage, organizati
     result.records[0].sustainabilityOpportunityComments.prevention,
     "Synthetic prevention opportunity"
   );
+  assert.equal(result.records[0].cwcAlignment, "");
+  assert.deepEqual(result.records[0].cwcSpecialtyNames, []);
+  assert.deepEqual(result.records[0].cwcSpecialties, {});
+});
+
+test("CWC mapping preserves multiple recommendations in one specialty", async () => {
+  const imagesDirectory = await tempImages(["existing.jpg"]);
+  const result = generatePreviewRecords(
+    sheet([
+      projectRow({
+        cells: {
+          [CWC_ALIGNMENT_COLUMN_TITLE]: " YES ",
+          [CWC_SPECIALTY_SELECTOR_COLUMN_TITLES[0]]: {
+            objectValue: { values: ["Nephrology"] },
+            displayValue: "Nephrology"
+          },
+          [CWC_SPECIALTY_SELECTOR_COLUMN_TITLES[1]]: "Respiratory medicine",
+          Nephrology: {
+            objectValue: {
+              values: [
+                "First recommendation\nSecond recommendation",
+                { value: "Third recommendation" }
+              ]
+            },
+            displayValue:
+              "First recommendation\nSecond recommendation\nThird recommendation"
+          },
+          "Respiratory medicine": {
+            objectValue: null,
+            value: "Fourth recommendation\nFifth recommendation"
+          }
+        }
+      })
+    ]),
+    { imagesDirectory }
+  );
+
+  assert.equal(CWC_SPECIALTY_COLUMN_TITLES.length, 75);
+  assert.equal(result.records[0].cwcAlignment, "YES");
+  assert.deepEqual(result.records[0].cwcSpecialtyNames, [
+    "Nephrology",
+    "Respiratory medicine"
+  ]);
+  assert.deepEqual(result.records[0].cwcSpecialties, {
+    Nephrology: [
+      "First recommendation",
+      "Second recommendation",
+      "Third recommendation"
+    ],
+    "Respiratory medicine": ["Fourth recommendation", "Fifth recommendation"]
+  });
+});
+
+test("CWC mapping combines split specialty selectors without requiring recommendations", async () => {
+  const imagesDirectory = await tempImages(["existing.jpg"]);
+  const result = generatePreviewRecords(
+    sheet([
+      projectRow({
+        cells: {
+          [CWC_ALIGNMENT_COLUMN_TITLE]: "Yes",
+          [CWC_SPECIALTY_SELECTOR_COLUMN_TITLES[0]]: {
+            objectValue: { values: ["Critical care", "Nephrology"] },
+            displayValue: "Critical care, Nephrology"
+          },
+          [CWC_SPECIALTY_SELECTOR_COLUMN_TITLES[1]]: "Respiratory medicine"
+        }
+      })
+    ]),
+    { imagesDirectory }
+  );
+
+  assert.deepEqual(result.records[0].cwcSpecialtyNames, [
+    "Critical care",
+    "Nephrology",
+    "Respiratory medicine"
+  ]);
+  assert.deepEqual(result.records[0].cwcSpecialties, {});
+});
+
+test("CWC recommendations remain unpublished when alignment is not Yes", async () => {
+  const imagesDirectory = await tempImages(["existing.jpg"]);
+  const result = generatePreviewRecords(
+    sheet([
+      projectRow({
+        cells: {
+          [CWC_ALIGNMENT_COLUMN_TITLE]: "No",
+          Nephrology: "This recommendation must not be exposed."
+        }
+      })
+    ]),
+    { imagesDirectory }
+  );
+
+  assert.equal(result.records[0].cwcAlignment, "No");
+  assert.deepEqual(result.records[0].cwcSpecialtyNames, []);
+  assert.deepEqual(result.records[0].cwcSpecialties, {});
 });
 
 test("Phase 2B rejects a blank required organization", async () => {
@@ -510,6 +612,16 @@ test("Phase 2B blank publication date is not auto-filled", async () => {
       error instanceof ValidationError &&
       JSON.stringify(error.errors).includes("Website publication date is missing")
   );
+});
+
+test("Phase 2B converts an Excel serial publication date", async () => {
+  const imagesDirectory = await tempImages(["existing.jpg"]);
+  const result = generatePreviewRecords(
+    sheet([projectRow({ publicationDate: 46217 })]),
+    { imagesDirectory }
+  );
+
+  assert.equal(result.records[0].publishedOn, "14 July 2026");
 });
 
 test("Phase 2B image validation accepts existing case-sensitive filename", async () => {
@@ -856,6 +968,57 @@ test("A website-impacting Published field change triggers publication without Re
 
   assert.equal(changedPlan.writeBackRows.length, 0);
   assert.equal(detectPublicationWork(originalPlan.serialized, changedPlan).shouldPublish, true);
+});
+
+test("A Published CWC recommendation edit triggers publication on the next run", async () => {
+  const imagesDirectory = await tempImages(["seqi-0054.jpg"]);
+  const originalPlan = await buildPublishPlan({
+    sheet: sheet([
+      projectRow({
+        recordId: "SEQI-0054",
+        status: PUBLISHED_STATUS,
+        photoFilename: "seqi-0054.jpg",
+        cells: {
+          [CWC_ALIGNMENT_COLUMN_TITLE]: "Yes",
+          Nephrology: "First recommendation\nSecond recommendation"
+        }
+      })
+    ]),
+    imagesDirectory,
+    tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0054"])
+  });
+  const changedPlan = await buildPublishPlan({
+    sheet: sheet([
+      projectRow({
+        recordId: "SEQI-0054",
+        status: PUBLISHED_STATUS,
+        photoFilename: "seqi-0054.jpg",
+        cells: {
+          [CWC_ALIGNMENT_COLUMN_TITLE]: "Yes",
+          Nephrology:
+            "First recommendation\nSecond recommendation\nThird recommendation"
+        }
+      })
+    ]),
+    currentRecords: originalPlan.records,
+    imagesDirectory,
+    tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0054"])
+  });
+
+  assert.equal(changedPlan.writeBackRows.length, 0);
+  assert.deepEqual(changedPlan.records[0].cwcSpecialties.Nephrology, [
+    "First recommendation",
+    "Second recommendation",
+    "Third recommendation"
+  ]);
+  assert.deepEqual(detectPublicationWork(originalPlan.serialized, changedPlan), {
+    shouldPublish: true,
+    galleryChanged: true,
+    hasReadyRows: false,
+    hasWriteBackRows: false
+  });
 });
 
 test("A failed unpublish deployment has no Smartsheet write-back payload", async () => {
@@ -1260,6 +1423,24 @@ test("Phase 3 fails duplicate Website record ID", async () => {
       }),
     "Duplicate Website record ID"
   );
+});
+
+test("Phase 3 normalizes an Excel serial publication date", async () => {
+  const imagesDirectory = await tempImages(["seqi-0034.jpg"]);
+  const plan = await buildPublishPlan({
+    sheet: sheet([
+      projectRow({
+        recordId: "SEQI-0034",
+        photoFilename: "seqi-0034.jpg",
+        publicationDate: 46217
+      })
+    ]),
+    imagesDirectory,
+    tempDirectory: await mkdtemp(join(tmpdir(), "seqi-test-temp-")),
+    attachmentClient: attachmentClientForRecordIds(["SEQI-0034"])
+  });
+
+  assert.equal(plan.records[0].publishedOn, "14 July 2026");
 });
 
 test("Phase 3 preserves an existing Published date when Smartsheet date is blank", async () => {

@@ -22,6 +22,27 @@ export const SUSTAINABILITY_TAXONOMY = Object.freeze(
 export const APPROVED_SUSTAINABILITY_PRINCIPLES = Object.freeze([
   ...SUSTAINABILITY_TAXONOMY.principles.values
 ]);
+export const CWC_ALIGNMENT_COLUMN_TITLE = "CWC Alignment";
+export const CWC_SPECIALTY_SELECTOR_COLUMN_TITLES = Object.freeze([
+  "Specialties A-Q",
+  "Specialties R-Z"
+]);
+export const CWC_SPECIALTY_SELECTOR_COLUMN_ALIASES = Object.freeze([
+  Object.freeze(["Specialties A-Q", "Specialties A\u2013Q", "Specialties A\ufffdQ"]),
+  Object.freeze([
+    "Specialties R-Z",
+    "Specialties R\u2013Z",
+    "Specialties R\ufffdZ",
+    "Specialties P-Z",
+    "Specialties P\u2013Z",
+    "Specialties P\ufffdZ"
+  ])
+]);
+export const CWC_SPECIALTY_COLUMN_TITLES = Object.freeze(
+  JSON.parse(
+    await readFile(new URL("../data/cwc-specialties.json", import.meta.url), "utf8")
+  )
+);
 const SUPPORTED_PREVIEW_IMAGE_EXTENSIONS = new Set([
   ".jpg",
   ".jpeg",
@@ -96,7 +117,9 @@ export const EXPECTED_COLUMN_TITLES = [
   "Website record ID",
   "Website publication status",
   "Website publication date",
-  "Website photo filename"
+  "Website photo filename",
+  CWC_ALIGNMENT_COLUMN_TITLE,
+  ...CWC_SPECIALTY_COLUMN_TITLES
 ];
 
 export const COMMON_COLUMN_TITLES = {
@@ -119,6 +142,7 @@ export const PROJECT_COLUMN_TITLES = {
   healthcareSetting: "Healthcare setting",
   mostValuableElements: "Most valuable toolkit elements",
   sustainabilityPrinciples: SUSTAINABILITY_TAXONOMY.principles.column,
+  cwcAlignment: CWC_ALIGNMENT_COLUMN_TITLE,
   activityData: "Activity data",
   environmentalData: "Environmental data"
 };
@@ -342,21 +366,109 @@ function splitListField(value) {
   return [stripBulletPrefix(text)].filter(Boolean);
 }
 
+function scalarTextValues(value) {
+  if (value === null || value === undefined) return [];
+
+  if (Array.isArray(value)) {
+    return value.flatMap(scalarTextValues);
+  }
+
+  if (typeof value === "object") {
+    for (const key of ["displayValue", "objectValue", "value", "values", "items"]) {
+      if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
+      const values = scalarTextValues(value[key]);
+      if (values.length > 0) return values;
+    }
+    return [];
+  }
+
+  return [String(value)];
+}
+
+export function getCwcRecommendationValues(row, column) {
+  const cell = getCell(row, column);
+  if (!cell) return [];
+
+  const sourceValues = [cell.objectValue, cell.value, cell.displayValue]
+    .map(scalarTextValues)
+    .find(values => values.length > 0) || [];
+
+  return uniqueTrimmed(
+    sourceValues
+      .flatMap(value => String(value).split(/\r?\n/))
+      .map(stripBulletPrefix)
+      .filter(Boolean)
+  );
+}
+
+export function getCwcSpecialtySelectionValues(row, columnLookup) {
+  const selectedValues = [];
+
+  for (const aliases of CWC_SPECIALTY_SELECTOR_COLUMN_ALIASES) {
+    const column = aliases
+      .map(title => columnLookup.get(title))
+      .find(Boolean);
+    const cell = getCell(row, column);
+    if (!cell) continue;
+
+    const values = [cell.objectValue, cell.value, cell.displayValue]
+      .map(scalarTextValues)
+      .find(items => items.length > 0) || [];
+    selectedValues.push(
+      ...values.flatMap(value => String(value).split(/[,;\r\n]+/))
+    );
+  }
+
+  return uniqueTrimmed(selectedValues);
+}
+
+export function buildCwcFields(row, columnLookup) {
+  const alignment = getCellText(
+    row,
+    columnLookup.get(PROJECT_COLUMN_TITLES.cwcAlignment)
+  );
+  const aligned = alignment.trim().toLowerCase() === "yes";
+  const specialties = {};
+  let specialtyNames = [];
+
+  if (aligned) {
+    for (const specialty of CWC_SPECIALTY_COLUMN_TITLES) {
+      const recommendations = getCwcRecommendationValues(
+        row,
+        columnLookup.get(specialty)
+      );
+      if (recommendations.length > 0) specialties[specialty] = recommendations;
+    }
+    specialtyNames = uniqueTrimmed([
+      ...getCwcSpecialtySelectionValues(row, columnLookup),
+      ...Object.keys(specialties)
+    ]);
+  }
+
+  return {
+    alignment,
+    specialtyNames,
+    specialties
+  };
+}
+
 export function formatDateForWebsite(value, fallbackDate = new Date()) {
   const text = trimText(value);
   if (!text) {
     throw new Error("Website publication date is missing.");
   }
 
-  const source = text;
   let date;
 
-  if (source instanceof Date) {
-    date = source;
-  } else if (/^\d{4}-\d{2}-\d{2}$/.test(source)) {
-    date = new Date(`${source}T00:00:00Z`);
+  if (value instanceof Date) {
+    date = value;
+  } else if (/^\d{5}(?:\.\d+)?$/.test(text)) {
+    const excelSerial = Number(text);
+    date = new Date(Date.UTC(1899, 11, 30) + excelSerial * 86400000);
+  } else if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    date = new Date(`${text}T00:00:00Z`);
   } else {
-    date = new Date(source);
+    date = new Date(text);
   }
 
   if (Number.isNaN(date.getTime())) {
@@ -478,6 +590,7 @@ function mapProjectRow(row, columnLookup, fallbackDate, options = {}) {
   const title = getCellText(row, columnLookup.get(PROJECT_COLUMN_TITLES.title));
   const common = buildCommonRecord(row, columnLookup, "project", title, fallbackDate, options);
   const sustainability = buildSustainabilityFields(row, columnLookup);
+  const cwc = buildCwcFields(row, columnLookup);
 
   return {
     ...common,
@@ -485,6 +598,9 @@ function mapProjectRow(row, columnLookup, fallbackDate, options = {}) {
     healthcareSetting: getCellText(row, columnLookup.get(PROJECT_COLUMN_TITLES.healthcareSetting)),
     description: getCellText(row, columnLookup.get(PROJECT_COLUMN_TITLES.description)),
     cobenefit: getCellText(row, columnLookup.get(PROJECT_COLUMN_TITLES.mostValuableElements)),
+    cwcAlignment: cwc.alignment,
+    cwcSpecialtyNames: cwc.specialtyNames,
+    cwcSpecialties: cwc.specialties,
     sustainabilityPrinciples: sustainability.principles,
     sustainabilityOpportunities: sustainability.opportunities,
     sustainabilityOpportunityComments: sustainability.opportunityComments,
