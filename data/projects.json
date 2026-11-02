@@ -1216,9 +1216,19 @@
     "healthcareSetting": "",
     "description": "Health care accounts for 4.6% of Canada's greenhouse gas (GHG) emissions, 25% of which comes from medications. Antimicrobials with high bioavailability offer no additional benefit when given intravenously, except when oral (PO) administration is not feasible. Intravenous (IV) formulations have a higher carbon footprint than their PO counterparts. IV-to-PO switch strategies benefit patients and the health care system by reducing line-related adverse events, nursing time, length of hospital stay, and costs and can also reduce carbon emissions.\n\nOur primary objective was to quantify IV use of bioequivalent antimicrobials when PO administration is feasible. Secondary objectives were to determine GHG emissions and antimicrobial costs associated with unnecessary IV use of bioequivalent antimicrobials.\n\nWe performed a retrospective, cross-sectional study of hospitalized adults who received IV azithromycin, ciprofloxacin, clindamycin, cotrimoxazole, fluconazole, levofloxacin, linezolid, metronidazole, moxifloxacin, or voriconazole at Vancouver General Hospital on five dates. We determined the proportion of patients receiving these antimicrobials who met criteria for PO administration. We collaborated with the UBC Clean Energy Research Centre and applied a life cycle assessment (LCA) to assess the GHG emissions of the antimicrobial drug delivery systems using OpenLCA with the Ecoinvent database. Using these data, we calculated the GHG emissions and costs associated with unnecessary IV use.",
     "cobenefit": "The SE-QI Toolkit helped inspire our team to apply a planetary health lens to quality improvement.",
-    "cwcAlignment": "",
-    "cwcSpecialtyNames": [],
-    "cwcSpecialties": {},
+    "cwcAlignment": "Yes",
+    "cwcSpecialtyNames": [
+      "Infectious disease",
+      "Internal medicine"
+    ],
+    "cwcSpecialties": {
+      "Infectious disease": [
+        "Don’t routinely prescribe intravenous forms of highly bioavailable antimicrobial agents for patients who can reliably take and absorb oral medications."
+      ],
+      "Internal medicine": [
+        "\"Don’t prescribe intravenous (IV) antibiotics for patients who can safely be treated with an oral option, given that IV antibiotics have a higher carbon footprint.\""
+      ]
+    },
     "sustainabilityPrinciples": [
       "Stewardship / Appropriateness"
     ],
