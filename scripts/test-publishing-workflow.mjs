@@ -369,6 +369,55 @@ test("CWC mapping preserves multiple recommendations in one specialty", async ()
   });
 });
 
+test("CWC mapping splits Smartsheet CSV-style multi-select recommendations", async () => {
+  const imagesDirectory = await tempImages(["existing.jpg"]);
+  const result = generatePreviewRecords(
+    sheet([
+      projectRow({
+        cells: {
+          [CWC_ALIGNMENT_COLUMN_TITLE]: "Yes",
+          Nephrology: {
+            value:
+              'First recommendation., "Second recommendation, with a comma.", "Third recommendation, also with a comma.", Fourth recommendation.'
+          }
+        }
+      })
+    ]),
+    { imagesDirectory }
+  );
+
+  assert.deepEqual(result.records[0].cwcSpecialties.Nephrology, [
+    "First recommendation.",
+    "Second recommendation, with a comma.",
+    "Third recommendation, also with a comma.",
+    "Fourth recommendation."
+  ]);
+});
+
+test("CWC mapping splits the production Nephrology recommendation payload", async () => {
+  const imagesDirectory = await tempImages(["existing.jpg"]);
+  const result = generatePreviewRecords(
+    sheet([
+      projectRow({
+        cells: {
+          [CWC_ALIGNMENT_COLUMN_TITLE]: "Yes",
+          Nephrology: {
+            value:
+              'Don’t initiate erythropoiesis-stimulating agents (ESAs) in chronic kidney disease (CKD) patients with hemoglobin levels greater than or equal to 100 g/L without symptoms of anemia., "Don’t prescribe nonsteroidal anti-inflammatory drugs (NSAIDS) in individuals with hypertension or heart failure or CKD of all causes, including diabetes.", "Don’t prescribe angiotensin converting enzyme (ACE) inhibitors in combination with angiotensin II receptor blockers (ARBs) for the treatment of hypertension, diabetic nephropathy and heart failure.", "Don’t initiate chronic dialysis without ensuring a shared decision-making process between patients, their families, and their nephrology health care team.", Don’t initiate dialysis in outpatients with Stage 5 CKD in the absence of clinical indications., "Don’t prescribe or renew drugs for patients with CKD or kidney failure on dialysis without reviewing polypharmacy, pill burden and how reduced kidney function affects dosing and medication safety.", Don’t prescribe opioids for chronic pain without first optimizing non-opioid and non-pharmacological options in patients with chronic kidney disease (CKD) and kidney failure receiving dialysis.'
+          }
+        }
+      })
+    ]),
+    { imagesDirectory }
+  );
+
+  const recommendations = result.records[0].cwcSpecialties.Nephrology;
+  assert.equal(recommendations.length, 7);
+  assert.match(recommendations[0], /erythropoiesis-stimulating agents/);
+  assert.match(recommendations[3], /shared decision-making process/);
+  assert.match(recommendations[6], /non-pharmacological options/);
+});
+
 test("CWC mapping combines split specialty selectors without requiring recommendations", async () => {
   const imagesDirectory = await tempImages(["existing.jpg"]);
   const result = generatePreviewRecords(

@@ -385,6 +385,53 @@ function scalarTextValues(value) {
   return [String(value)];
 }
 
+function splitQuotedCsvList(value) {
+  const text = trimText(value);
+  if (!text || !text.includes('"')) return [text].filter(Boolean);
+
+  const fields = [];
+  let current = "";
+  let inQuotes = false;
+  let sawDelimiter = false;
+  let sawQuotedField = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index];
+
+    if (character === '"') {
+      if (inQuotes && text[index + 1] === '"') {
+        current += '"';
+        index += 1;
+      } else {
+        inQuotes = !inQuotes;
+        sawQuotedField = true;
+      }
+      continue;
+    }
+
+    if (character === "," && !inQuotes) {
+      fields.push(current);
+      current = "";
+      sawDelimiter = true;
+      continue;
+    }
+
+    current += character;
+  }
+
+  if (inQuotes || !sawDelimiter || !sawQuotedField) return [text];
+  fields.push(current);
+  return fields;
+}
+
+function splitCwcRecommendationText(value) {
+  const lines = trimText(value).split(/\r?\n/);
+
+  return lines.length > 1
+    ? lines
+    : splitQuotedCsvList(lines[0]);
+}
+
 export function getCwcRecommendationValues(row, column) {
   const cell = getCell(row, column);
   if (!cell) return [];
@@ -395,7 +442,7 @@ export function getCwcRecommendationValues(row, column) {
 
   return uniqueTrimmed(
     sourceValues
-      .flatMap(value => String(value).split(/\r?\n/))
+      .flatMap(value => splitCwcRecommendationText(value))
       .map(stripBulletPrefix)
       .filter(Boolean)
   );
